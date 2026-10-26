@@ -1,0 +1,68 @@
+/* Блок «Этапы и сроки» по кадру Димы (Фигма, страница «12-2 Концепция 1», шапка 152:6787 и секция 152:6980).
+   Все размеры в пикселях макета 1440, --u пересчитывает их под ширину окна. */
+:root{
+  --u:1px;
+  --bg:#eeeff2;        /* фон секции */
+  --cell:#e9e9ed;      /* фон средней ячейки и активной строки */
+  --rule:#d3d5dd;      /* линейки */
+  --muted:#b3b5c1;     /* неактивные строки */
+  --text:#0e1124;      /* заголовок, активный этап */
+  --text-2:#0f0e12;    /* активная неделя */
+  --ink:#100e0c;       /* линии рисунка */
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --head:"Suisse Intl","Suisse Int'l","IBM Plex Sans",system-ui,sans-serif;  /* Suisse Intl покупает Дима, пока замена */
+  --ease:cubic-bezier(.32,.72,0,1);
+}
+html.lenis,html.lenis body{height:auto}
+.lenis.lenis-smooth{scroll-behavior:auto!important}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text)}
+body{font-family:var(--sans);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+
+/* служебные экраны до и после блока, чтобы видно было закрепление */
+.spacer{height:72vh;display:flex;align-items:flex-end;padding:0 calc(20*var(--u)) calc(24*var(--u));font:400 calc(11*var(--u))/1.4 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.spacer.after{height:110vh;align-items:flex-start;padding-top:calc(24*var(--u))}
+
+/* блок */
+.etapy{position:relative;width:calc(1440*var(--u));background:var(--bg)}
+.et-head{position:relative;height:calc(155*var(--u))}
+.et-head::before,.et-head::after{content:"";position:absolute;left:0;right:0;height:1px;background:var(--rule)}
+.et-head::before{top:0}
+.et-head::after{bottom:0}
+.et-title{position:absolute;left:calc(20*var(--u));top:calc(24*var(--u));margin:0;font:500 calc(90*var(--u))/.998 var(--head);letter-spacing:-.03em;color:var(--text);white-space:nowrap}
+.et-num{position:absolute;left:calc(1183*var(--u));top:calc(12*var(--u));font:400 calc(131*var(--u))/1 var(--mono);letter-spacing:-.1em;color:var(--text);font-variant-numeric:tabular-nums}
+/* пропуск анимации: правый нижний угол окна с домом, стрелка вправо. Линия 1,5 px, чуть жирнее рисунка, чтобы её было видно */
+.et-skip{position:absolute;right:calc(20*var(--u));bottom:calc(20*var(--u));display:flex;align-items:center;justify-content:center;margin:0;padding:0;border:0;border-radius:0;background:none;color:var(--text);cursor:pointer;transition:opacity .35s var(--ease)}
+.et-skip svg{display:block;width:calc(28*var(--u));height:calc(20*var(--u));fill:none;stroke:currentColor;overflow:visible;transition:transform .35s var(--ease)}
+.et-skip path{stroke-width:1.5;vector-effect:non-scaling-stroke;stroke-linecap:round;stroke-linejoin:round}
+.et-skip:hover svg{transform:translateX(calc(3*var(--u)))}
+.et-skip:focus-visible{outline:1px solid var(--text);outline-offset:calc(4*var(--u))}
+.et-skip.off{opacity:0;pointer-events:none}
+.et-of{position:absolute;left:calc(1327*var(--u));top:calc(24*var(--u));font:400 calc(18*var(--u))/1 var(--mono);letter-spacing:.02em;color:var(--text)}
+
+.et-body{position:relative;height:calc(503*var(--u))}
+.et-rule{position:absolute;left:0;right:0;height:1px;background:var(--rule)}
+.et-hl{position:absolute;left:0;right:0;top:0;height:calc(var(--hlh,57)*var(--u));background:var(--cell);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);transform:translateY(calc(var(--hl,167)*var(--u)));transition:transform .55s var(--ease)}
+.et-week{position:absolute;left:calc(18*var(--u));margin:0;font:400 calc(14*var(--u))/calc(18*var(--u)) var(--sans);color:var(--muted);white-space:nowrap;transition:color .35s var(--ease),transform .55s var(--ease)}
+.et-week.on{color:var(--text-2);font-weight:500;transform:translateX(calc(11*var(--u)))}
+.et-stage{position:absolute;left:calc(965*var(--u));margin:0;font:400 calc(20*var(--u))/calc(26*var(--u)) var(--sans);color:var(--muted);white-space:nowrap;transition:color .35s var(--ease)}
+.et-stage span{display:inline-block;transition:transform .55s var(--ease)}
+.et-stage i{position:absolute;left:0;top:calc(12*var(--u));width:calc(6*var(--u));height:calc(6*var(--u));border-radius:50%;background:var(--text);transform:scale(0);transition:transform .45s var(--ease)}
+.et-stage.on{color:var(--text);font-weight:500}
+.et-stage.on span{transform:translateX(calc(14*var(--u)))}
+.et-stage.on i{transform:scale(1)}
+.et-cell{position:absolute;left:calc(165*var(--u));top:0;width:calc(784*var(--u));height:calc(503*var(--u));background:var(--cell)}
+.et-cell canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+
+/* счётчик недель: ленты цифр, разметка и стили из Number Odometer (Osmo) без изменений; едут непрерывно, см. etapy.js */
+[data-odometer-element]{display:inline-flex;align-items:center;font-variant-numeric:tabular-nums}
+[data-odometer-part="mask"],[data-odometer-part="static"]{display:inline-block;overflow:clip;padding:.05em;margin:-.05em}
+[data-odometer-part="roller"]{display:block;white-space:pre;text-align:center;will-change:transform}
+[data-odometer-part="static"]{display:inline-block}
+
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+@media (prefers-reduced-motion: reduce){
+  .et-hl,.et-week,.et-stage,.et-stage span,.et-stage i{transition:none}
+}
