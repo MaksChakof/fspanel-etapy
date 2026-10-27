@@ -1,0 +1,1470 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Аниматик главной ФСП АРТ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&family=Geist+Mono:wght@400&display=swap">
+<style>
+/* Аниматик: грубые кадры, настоящая последовательность и движения. Сцена A липкая, прокрутка ведёт таймлайн. */
+:root{
+  --bg:#F3F1EC; --fg:#17191C; --muted:#6E7076; --line:#D8D4CC; --accent:#5A6A3E; --ink:#0D0F11;
+  --display:"Geist","Inter",system-ui,-apple-system,sans-serif; --mono:"Geist Mono","SFMono-Regular",Menlo,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:auto}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--display);font-weight:400;line-height:1.5;-webkit-font-smoothing:antialiased}
+img{max-width:100%;display:block}
+h1,h2,h3{margin:0;font-weight:400;text-wrap:balance;letter-spacing:-.02em}
+.wrap{max-width:1440px;margin:0 auto;padding-left:max(16px,calc(64px + env(safe-area-inset-left,0px)));padding-right:max(16px,calc(64px + env(safe-area-inset-right,0px)))}
+.mono{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.lg{font-size:20px;line-height:1.45}
+.md{font-size:16px;line-height:1.55}
+.sm{font-size:13px;line-height:1.45;color:var(--muted)}
+
+/* шапка */
+header{position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;height:72px;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:24px;background:rgba(243,241,236,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding-left:max(16px,calc(64px + env(safe-area-inset-left,0px)));padding-right:max(16px,calc(64px + env(safe-area-inset-right,0px)))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:60;background:var(--bg)}
+header .logo{font-family:var(--mono);font-size:13px;letter-spacing:.14em;padding:8px 12px;background:#E3E0D9;color:#2B2D31}
+header nav{display:flex;gap:28px;font-size:15px}
+header nav span{opacity:.85}
+header .right{display:flex;align-items:center;gap:20px}
+header .btn{background:var(--ink);color:#fff;font-size:14px;padding:12px 20px;font-weight:500}
+header .note{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+@media (max-width:900px){header nav,header .note,header .phone{display:none}}
+
+/* подписи состояния */
+#chap{position:fixed;left:max(16px,calc(24px + env(safe-area-inset-left,0px)));bottom:max(16px,calc(20px + env(safe-area-inset-bottom,0px)));z-index:50;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg);background:rgba(243,241,236,.8);padding:8px 10px;border:1px solid var(--line)}
+#scene{position:fixed;right:max(16px,calc(24px + env(safe-area-inset-right,0px)));bottom:max(16px,calc(20px + env(safe-area-inset-bottom,0px)));z-index:50;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:rgba(243,241,236,.8);padding:8px 10px;border:1px solid var(--line)}
+
+/* липкие сцены */
+.scene{position:relative}
+.stage{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;background:#111}
+.layer{position:absolute;inset:0;will-change:transform,opacity}
+.layer img{width:100%;height:100%;object-fit:cover}
+.layer.light{background:var(--bg)}
+.layer.light img{object-fit:contain;object-position:right top;padding:13vh 6vw 26vh 30vw;background:var(--bg)}
+.src{position:absolute;left:max(16px,calc(64px + env(safe-area-inset-left,0px)));top:calc(72px + 14px + env(safe-area-inset-top,0px));font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.75);background:rgba(0,0,0,.28);padding:6px 8px;opacity:0}
+.layer.light .src,.src.light{color:var(--muted);background:rgba(255,255,255,.6)}
+/* сцена A: канвас с линейной моделью, фон листа */
+#stA{background:var(--bg)}
+#aCanvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#aFallback img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#stA .src{z-index:3}
+.txt{position:absolute;left:max(16px,calc(64px + env(safe-area-inset-left,0px)));right:max(16px,calc(64px + env(safe-area-inset-right,0px)));bottom:max(72px,calc(72px + env(safe-area-inset-bottom,0px)));display:grid;grid-template-columns:7fr 1fr 4fr;gap:24px;align-items:end;color:#fff;opacity:0;will-change:opacity,transform}
+.txt,.co,.strip{text-shadow:0 1px 14px rgba(0,0,0,.45)}
+.txt.dark,.strip.dark{text-shadow:none}
+.txt.dark{color:var(--fg)}
+.txt h1{font-size:clamp(34px,4.4vw,64px);line-height:1.04}
+.txt h2{font-size:clamp(28px,3vw,44px);line-height:1.1}
+.txt p{margin:16px 0 0;max-width:34em}
+.strip{position:absolute;left:max(16px,calc(64px + env(safe-area-inset-left,0px)));right:max(16px,calc(64px + env(safe-area-inset-right,0px)));top:calc(72px + 40px + env(safe-area-inset-top,0px));display:grid;grid-template-columns:1fr 6fr 5fr;gap:24px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.35);font-size:14px;color:#fff;opacity:0}
+.strip.dark{border-color:var(--line);color:var(--fg)}
+.strip .r{text-align:right;opacity:.75}
+.strip .n{opacity:.9}
+.tbl{display:grid;grid-template-columns:1fr 1fr;gap:12px 24px;font-size:13px}
+.tbl span:nth-child(odd){opacity:.9}
+.tbl span:nth-child(even){opacity:.75}
+.tbl+.foot{margin-top:18px;font-size:12px;opacity:.7}
+.facts{display:flex;gap:24px}
+.fact{flex:1;border-top:1px solid currentColor;padding-top:12px}
+.fact b{display:block;font-weight:400;font-size:clamp(28px,2.8vw,40px);line-height:1.05;letter-spacing:-.02em}
+.fact i{display:block;font-style:normal;font-size:13px;opacity:.75;margin-top:6px}
+.fact.big b{font-size:clamp(44px,6vw,88px);letter-spacing:-.03em}
+.callouts{position:absolute;inset:0;pointer-events:none}
+.co{position:absolute;color:#fff;font-size:14px;max-width:260px;opacity:0;will-change:opacity}
+.co::before{content:"";display:block;width:120px;height:1px;background:rgba(255,255,255,.8);margin-bottom:10px}
+.co b{display:block;font-weight:500}
+.co span{opacity:.8}
+.stamp{position:absolute;right:max(16px,calc(64px + env(safe-area-inset-right,0px)));bottom:max(72px,calc(72px + env(safe-area-inset-bottom,0px)));border:1px solid var(--fg);padding:14px 16px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--fg);display:grid;grid-template-columns:auto auto;gap:6px 18px;opacity:0;background:rgba(243,241,236,.9)}
+.stamp span:nth-child(even){color:var(--muted)}
+.tr{position:absolute;right:max(16px,calc(64px + env(safe-area-inset-right,0px)));top:calc(72px + 40px + env(safe-area-inset-top,0px));width:min(440px,calc(100% - 32px));background:rgba(12,14,16,.78);color:#fff;padding:16px 18px 18px;font-size:13px;line-height:1.45;opacity:0;border-left:2px solid #fff;z-index:5;will-change:opacity}
+.tr b{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+.tr i{display:block;font-style:normal;margin-top:8px;opacity:.75}
+
+/* обычные главы */
+section.flat{position:relative;background:var(--bg)}
+section.flat .wrap{padding-top:96px;padding-bottom:96px}
+section.grey{background:#ECE9E3}
+.cs{display:grid;grid-template-columns:1fr 6fr 5fr;gap:24px;padding-bottom:12px;border-bottom:1px solid var(--line);font-size:14px;margin-bottom:56px}
+.cs .r{text-align:right;color:var(--muted)}
+.cs .n{color:var(--muted)}
+.row{display:grid;grid-template-columns:repeat(12,1fr);gap:24px;align-items:end}
+.c5{grid-column:span 5}.c6{grid-column:span 6}.c7{grid-column:span 7}.c4{grid-column:span 4}.c12{grid-column:span 12}
+.c5.off1{grid-column:8/13}
+.c4.off1{grid-column:9/13}
+.c6.st7{grid-column:7/13}
+.ph{position:relative;background:#E1DED7;overflow:hidden}
+.ph img{width:100%;height:100%;object-fit:cover}
+.ph .cap{position:absolute;left:12px;top:12px;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:rgba(0,0,0,.35);padding:5px 7px}
+.ph.h520{height:520px}.ph.h300{height:300px}.ph.h360{height:360px}
+h2.t{font-size:clamp(30px,3.1vw,44px);line-height:1.1}
+.link{display:inline-block;margin-top:22px;font-weight:500;border-bottom:1px solid var(--fg);padding-bottom:3px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:64px}
+.card b{display:block;font-weight:500;font-size:20px;margin-top:12px}
+.card i{display:block;font-style:normal;font-size:13px;color:var(--muted);margin-top:4px}
+.big{font-size:clamp(56px,7.5vw,112px);line-height:1;letter-spacing:-.04em}
+.tabs{display:flex;gap:28px;margin-bottom:20px;font-size:16px}
+.tabs button{all:unset;cursor:pointer;color:var(--muted);padding-bottom:8px;border-bottom:2px solid transparent}
+.tabs button.on{color:var(--fg);border-color:var(--fg);font-weight:500}
+.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.stage-imgs{position:relative;height:340px;background:#E1DED7;overflow:hidden}
+.stage-imgs img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .5s}
+.stage-imgs img.on{opacity:1}
+.list{margin-top:24px;font-size:13px}
+.list div{display:grid;grid-template-columns:3fr 2fr;gap:24px;padding:12px 0;border-bottom:1px solid var(--line)}
+.list div span:last-child{color:var(--muted)}
+.weeks{margin-top:56px}
+.weeks .lane{display:grid;grid-template-columns:120px 1fr;align-items:center;gap:16px;margin-top:10px}
+.weeks .bar{position:relative;height:44px;background:#EDEAE4}
+.weeks .seg{position:absolute;top:0;height:100%;background:#C9C5BD;transform-origin:left;transform:scaleX(0);font-size:12px;line-height:44px;padding-left:10px;color:#2B2D31;white-space:nowrap;overflow:hidden}
+.weeks .seg.b{background:#B6B1A8}
+.weeks .ticks{display:grid;grid-template-columns:120px 1fr;gap:16px;font-family:var(--mono);font-size:10px;color:var(--muted)}
+.weeks .ticks div{display:flex;justify-content:space-between}
+/* глава 05 как мини-сцена */
+.stage.light5{background:var(--bg);color:var(--fg)}
+.wrap5{position:absolute;inset:0;padding:calc(72px + 28px + env(safe-area-inset-top,0px)) max(16px,calc(64px + env(safe-area-inset-right,0px))) 48px max(16px,calc(64px + env(safe-area-inset-left,0px)));display:flex;flex-direction:column}
+.wrap5 .cs{margin-bottom:24px}
+.g5{display:grid;grid-template-columns:7fr 5fr;gap:24px;flex:1;min-height:0}
+.draw{position:relative;min-height:0;background:var(--bg)}
+.draw .wf{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0}
+.draw .wf.on{opacity:1}
+.draw .wk{position:absolute;left:0;top:0}
+.draw .wk b{display:block;font-weight:300;font-size:clamp(64px,8vw,120px);line-height:.95;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.draw .wk i{display:block;font-style:normal;font-size:13px;color:var(--muted);margin-top:6px}
+.draw .cap5{position:absolute;left:0;bottom:0;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.side h2{font-size:clamp(26px,2.6vw,40px);line-height:1.1}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px}
+.ph.h200{height:200px}
+.weeks .bar{overflow:visible}
+#now{position:absolute;top:-8px;bottom:-8px;width:2px;background:var(--fg);left:0;pointer-events:none}
+@media (max-width:900px){.g5{grid-template-columns:1fr}.two{grid-template-columns:1fr}.ph.h200{height:140px}.draw .wk b{font-size:48px}}
+.rows{margin-top:48px;font-size:14px}
+.rows div{display:grid;grid-template-columns:3fr 2fr 1.5fr 2fr;gap:24px;padding:14px 0;border-bottom:1px solid var(--line)}
+.rows div.h{color:var(--muted);font-size:13px}
+.rows div b{font-weight:500}
+.rows div span{color:var(--muted)}
+.btns{display:flex;gap:12px;margin-top:28px;flex-wrap:wrap}
+.btn1{background:var(--ink);color:#fff;padding:16px 24px;font-size:15px;font-weight:500}
+.btn2{border:1px solid var(--ink);padding:15px 23px;font-size:15px;font-weight:500}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.three .fact{border-top-color:var(--fg)}
+.form{display:grid;grid-template-columns:5fr 1fr 6fr;gap:24px;align-items:start}
+.field{margin-top:22px}
+.field label{display:block;font-size:13px;color:var(--muted);margin-bottom:8px}
+.field .in{border:1px solid #9A9790;padding:14px;color:#8C8984;font-size:16px}
+.opts{display:flex;gap:8px;flex-wrap:wrap}
+.opts span{border:1px solid #9A9790;padding:10px 14px;font-size:13px}
+.steps div{border-top:1px solid var(--fg);padding:16px 0 18px}
+.steps b{display:block;font-weight:500}
+.steps i{font-style:normal;color:var(--muted);font-size:13px}
+footer{background:#ECE9E3;border-top:1px solid var(--line)}
+footer .wrap{padding-top:72px;padding-bottom:48px;display:grid;grid-template-columns:4fr 2fr 2fr 4fr;gap:24px;font-size:14px}
+footer b{display:block;font-weight:500;font-size:22px;margin-bottom:10px}
+footer .mono{margin-bottom:10px}
+footer p{margin:0 0 6px}
+@media (max-width:900px){
+  .txt{grid-template-columns:1fr;gap:16px}
+  .row{grid-template-columns:1fr}
+  .c5,.c6,.c7,.c4,.c12{grid-column:auto}
+  .off1{grid-column-start:auto}
+  .cards,.three{grid-template-columns:1fr}
+  .form{grid-template-columns:1fr}
+  footer .wrap{grid-template-columns:1fr}
+  .strip,.cs{grid-template-columns:auto 1fr auto}
+  .ph.h520{height:300px}
+  .callouts .co{display:none}
+  .layer.light img{padding:14vh 4vw}
+  /* сцена A на телефоне: подпись кадра в две строки, полоса главы ниже неё, штамп плана сверху, лист плана между ними и текстом */
+  #stA .src{max-width:72%}
+  #stA .strip{top:calc(72px + 76px + env(safe-area-inset-top,0px))}
+  #stA .strip .r{display:none}
+  #stA .stamp{bottom:auto;top:calc(72px + 116px + env(safe-area-inset-top,0px));font-size:10px;gap:4px 12px;padding:10px 12px}
+}
+@media (prefers-reduced-motion:reduce){.layer,.txt,.co{transition:none}}
+</style>
+
+<header>
+  <div style="display:flex;align-items:center;gap:36px"><span class="logo">ФСП АРТ</span>
+    <nav><span>Как мы строим</span><span>Индивидуальный проект</span><span>Дома</span><span>О компании</span></nav></div>
+  <div class="right"><span class="note">Аниматик: грубые кадры, настоящая последовательность</span><span class="phone mono">+7 (телефон направления)</span><span class="btn">Разговор с архитектором</span></div>
+</header>
+<div id="chap">00 Первый экран</div>
+<div id="scene">Сцена A, одна 3D-модель, одна камера</div>
+
+<!-- СЦЕНА A: дом. Главы 00–03, липкая, 700vh. Линейная модель Алексино на канвасе ведёт камеру,
+     в четырёх точках остановки из линий проявляется готовый кадр с той же камеры -->
+<section class="scene" id="sceneA" style="height:700vh" data-scene="Сцена A, одна 3D-модель, одна камера">
+  <div class="stage" id="stA">
+    <canvas id="aCanvas"></canvas>
+    <div class="layer" id="aFallback" hidden></div>
+    <div class="src" id="srcA1" style="opacity:1">Кадр A1 по модели Алексино, Higgsfield, линии совпадают с кадром</div>
+    <div class="src" id="srcA2">Кадр A2 по модели Алексино, Higgsfield, линии совпадают с кадром. Тот же кадр с наездом</div>
+    <div class="src" id="srcA3c">Кадр A3, кухня-гостиная Алексино, камера M, ступень «бетон» (Higgsfield по модели)</div>
+    <div class="src" id="srcA3f">Кадр A3, та же камера M, ступень «отделка». Проявление по глубине, окно последним</div>
+    <div class="src light" id="srcA4">Кадр A4, план Алексино, чертёж клиента поверх модели сверху. Стены модели на стенах чертежа</div>
+
+    <div class="callouts" id="co">
+      <div class="co" style="left:64%;top:16.5%"><b>Навес без опор</b><span>Панель держит консоль, колонна у входа не нужна</span></div>
+      <div class="co" style="left:74%;top:66%"><b>Свет во всю стену</b><span>Окно в пол, размер по проекту</span></div>
+      <div class="co" style="left:15%;top:58%"><b>Фасад под вас</b><span>Камень, дерево или бетон поверх панели</span></div>
+    </div>
+
+    <div class="strip" id="s1"><span class="n">01</span><span>Снаружи</span><span class="r">любая архитектура, любой фасад</span></div>
+    <div class="strip" id="s2"><span class="n">02</span><span>Внутри</span><span class="r">потолки 3,4 м, гостиная без колонн</span></div>
+    <div class="strip dark" id="s3"><span class="n">03</span><span>У дома есть автор</span><span class="r">проект ведёт архитектор</span></div>
+
+    <div class="txt" id="t1" style="opacity:1">
+      <div><h1>Капитальный дом по вашему проекту. За 6 месяцев.</h1><p class="lg">Стены делает свой завод, проект ведёт архитектор. Москва и область.</p></div><div></div>
+      <div><div class="tbl"><span>Стройка</span><span>6 месяцев</span><span>Тёплый контур</span><span>130 000 ₽ за м²</span><span>Срок службы</span><span>от 100 лет</span></div><div class="foot">6 месяцев после выхода на участок, дом до 400 м².</div></div>
+    </div>
+    <div class="txt" id="t2">
+      <div><h2>Любая архитектура. Любой фасад.</h2><p class="md">Плоская кровля, консоли, большие окна, фасад из камня, дерева или бетона. Снаружи дом из заводских панелей отличает одно: коробку собрали за две недели.</p></div><div></div><div></div>
+    </div>
+    <div class="txt" id="t3">
+      <div><h2>Потолки 3,4 метра. Гостиная без колонн.</h2><p class="md">Панель высотой 3,56 м даёт потолок 3,4. Нужно выше, делаем 4 и 4,5 м. Перекрытие держит пролёт 8 метров, колонны в гостиной не нужны.</p></div><div></div>
+      <div class="facts"><div class="fact"><b>3,4 м</b><i>потолок</i></div><div class="fact"><b>8 м</b><i>пролёт без колонн</i></div><div class="fact"><b>44 м²</b><i>гостиная</i></div></div>
+    </div>
+    <div class="txt dark" id="t4">
+      <div><h2>У дома есть автор.</h2><p class="md">Проект ведёт архитектор: рисует дом под вашу семью и участок, сам отвечает на вопросы до ключей. Стоимость проекта засчитывается в стоимость дома.</p></div><div></div><div></div>
+    </div>
+    <div class="tr" id="tr1"><b>Переход A1 → A2</b>На сайте: камера едет по линиям от общего плана к фасаду.<i>Здесь: та же точка камеры с наездом (зум), кадр один, поэтому линии совпадают.</i></div>
+    <div class="tr" id="tr2"><b>Переход A2 → A3</b>На сайте так же: камера идёт сквозь угловое окно внутрь по линиям той же модели, в гостиной из линий проявляется бетон, потом отделка, по глубине кадра, окно последним.<i>В аниматике линии настоящие, оба кадра гостиной настоящие, с камеры M.</i></div>
+    <div class="tr" id="tr3"><b>Переход A3 → A4</b>На сайте так же: кадр растворяется в линии, камера поднимается строго вверх, кровля уходит, стены модели ложатся на стены чертежа, поверх проявляется лист плана.<i>В аниматике линии настоящие, чертёж клиента.</i></div>
+    <div class="stamp" id="stamp"><span>Дом</span><span>Алексино, Истра</span><span>Площадь</span><span>156 м²</span><span>Потолок</span><span>3,4 м</span><span>Архитектор</span><span>Максим Липатников</span></div>
+  </div>
+</section>
+
+<!-- СЦЕНА B: автор, цена, срок. Светлые экраны -->
+<section class="flat" data-chap="03 У дома есть автор" data-scene="Сцена B, светлые экраны, рендеры и фото">
+  <div class="wrap">
+    <div class="row">
+      <div class="c5"><div class="ph h520"><img src="img/b1-portrait.jpg" alt="Максим Липатников"><span class="cap">Кадр B1, портрет из чата, нужна съёмка</span></div></div>
+      <div class="c6 st7"><p class="md">Максим Липатников, архитектор. Ведёт проекты направления от первого эскиза до ключей и раз в две недели проводит день общения с архитектором в Алексино.</p><span class="link">Индивидуальный проект →</span></div>
+    </div>
+    <div class="cards">
+      <div class="card"><div class="ph h300"><img src="img/b1-card-1.jpg" alt=""><span class="cap">визуализация Д300</span></div><b>[Имя дома]</b><i>Штамп: [место]. [м²]. Потолок 3,4 м. [стадия]</i></div>
+      <div class="card"><div class="ph h300"><img src="img/b1-card-2.jpg" alt=""><span class="cap">визуализация C1</span></div><b>[Имя дома]</b><i>Штамп: [место]. [м²]. Потолок 3,4 м. [стадия]</i></div>
+      <div class="card"><div class="ph h300"><img src="img/b1-card-3.jpg" alt=""><span class="cap">Алексино, рендер по модели</span></div><b>Алексино</b><i>Штамп: Истра. 156 м². Потолок 3,4 м. Выставочный дом</i></div>
+    </div>
+  </div>
+</section>
+
+<section class="flat grey" id="price" data-chap="04 Цена" data-scene="Сцена B, светлые экраны, рендеры и фото">
+  <div class="wrap">
+    <div class="cs"><span class="n">04</span><span>Цена</span><span class="r">130 000 ₽ за м² тёплого контура</span></div>
+    <div class="row" style="align-items:start">
+      <div class="c6"><div class="big">130 000 ₽</div><p class="lg" style="margin:12px 0 0">за м² тёплого контура</p><p class="md" style="max-width:34em">В цене фундамент, стены, перекрытие, окна, кровля и закладные под коммуникации. Черновую отделку и дом под ключ считаем по проекту за три-четыре дня.</p><p class="sm">Не входит: участок, подключение к сетям, отделка.</p></div>
+      <div class="c5 off1">
+        <div class="tabs" id="tabs"><button class="on" data-i="0">Тёплый контур</button><button data-i="1">Черновая</button><button data-i="2">Под ключ</button></div>
+        <div class="stage-imgs" id="stages"><img class="on" src="img/b2-stage-1.jpg" alt="Тёплый контур"><img src="img/b2-stage-2.jpg" alt="Черновая"><img src="img/a3-kitchen-finish.jpg" alt="Под ключ"></div>
+        <div class="mono" style="margin-top:8px">Кадр B2. На сайте три рендера одного дома с одной камеры. Здесь подмена: Алексино в бетоне, стройка внутри, гостиная</div>
+        <div class="list"><div><span>Фундамент</span><span>входит</span></div><div><span>Стены с завода</span><span>входит</span></div><div><span>Перекрытие</span><span>входит</span></div><div><span>Окна и кровля</span><span>входит</span></div><div><span>Закладные под коммуникации</span><span>входит</span></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="scene" id="term" style="height:320vh" data-chap="05 Почему 6 месяцев" data-scene="Сцена B, завод и участок одновременно, рисунок из теста">
+  <div class="stage light5">
+    <div class="wrap5">
+      <div class="cs"><span class="n">05</span><span>Почему 6 месяцев</span><span class="r">завод и участок одновременно</span></div>
+      <div class="g5">
+        <div class="draw" id="draw">
+          <img class="wf on" src="img/w0.jpg" alt=""><img class="wf" src="img/w4.jpg" alt=""><img class="wf" src="img/w8.jpg" alt=""><img class="wf" src="img/w12.jpg" alt=""><img class="wf" src="img/w14.jpg" alt=""><img class="wf" src="img/w17.jpg" alt=""><img class="wf" src="img/w21.jpg" alt=""><img class="wf" src="img/w26.jpg" alt="">
+          <div class="wk"><b id="wk">00</b><i>неделя из 26</i></div>
+          <div class="cap5">Рисунок сборки из теста «Шесть месяцев»: панели встают в контур по неделям. На сайте живой рисунок, здесь 8 кадров</div>
+        </div>
+        <div class="side">
+          <h2>Завод и участок работают одновременно.</h2>
+          <p class="md">Пока на участке делают фундамент, завод делает стены: домокомплект готов за две недели. Монтаж две недели, перекрытие, окна и кровля ещё два месяца. Итого 6 месяцев до тёплого контура.</p>
+          <div class="two"><div class="ph h200"><img src="img/b3-factory.jpg" alt="Завод"><span class="cap">завод, фото клиента</span></div><div class="ph h200"><img src="img/b3-site.jpg" alt="Участок"><span class="cap">участок, фото клиента</span></div></div>
+          <span class="link">Как мы строим →</span>
+        </div>
+      </div>
+      <div class="weeks" id="weeks">
+        <div class="ticks"><div></div><div><span>00</span><span>04</span><span>08</span><span>12</span><span>16</span><span>20</span><span>24</span><span>26</span></div></div>
+        <div class="lane"><span class="sm" style="color:var(--fg)">Завод</span><div class="bar"><div class="seg" data-a="0" data-b="4" style="left:0;width:15.4%">проект панелей</div><div class="seg b" data-a="10" data-b="12" style="left:38.5%;width:7.7%">домокомплект</div><div id="now"></div></div></div>
+        <div class="lane"><span class="sm" style="color:var(--fg)">Участок</span><div class="bar"><div class="seg" data-a="0" data-b="4" style="left:0;width:15.4%">проект фундамента</div><div class="seg b" data-a="3" data-b="13" style="left:11.5%;width:38.5%">фундамент</div><div class="seg" data-a="12" data-b="14" style="left:46.2%;width:7.7%">монтаж</div><div class="seg b" data-a="14" data-b="22" style="left:53.8%;width:30.8%">перекрытие</div><div class="seg" data-a="21" data-b="26" style="left:80.8%;width:19.2%">окна и кровля</div></div></div>
+        <div class="mono" style="margin-top:10px">Недели по наброску Максима 16.10, итог ждём. Прокрутка ведёт неделю, рисунок и линию вместе</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ПЕРЕХОД B → C: из рендера в фото -->
+<section class="scene" id="bc" style="height:220vh" data-chap="Переход B → C" data-scene="из рендера в фото того же дома">
+  <div class="stage">
+    <div class="layer" id="bc1"><img src="img/bc-render.jpg" alt="Алексино, рендер"><div class="src" style="opacity:1">Переход. Алексино, рендер по модели (Higgsfield)</div></div>
+    <div class="layer" id="bc2" style="opacity:0"><img src="img/b2-stage-1.jpg" alt="Алексино, фото"><div class="src" style="opacity:1">Переход. Алексино, фото выставочного дома в тёплом контуре</div></div>
+    <div class="tr" id="tbc" style="opacity:1"><b>Переход B → C</b>На сайте: рендер тёплого контура из переключателя стадий растворяется в фото того же дома с той же точки. Для этого фото снимаем с ракурса рендера.<i>В аниматике: рендер Алексино растворяется в фото с другого ракурса, подмена.</i></div>
+  </div>
+</section>
+
+<!-- СЦЕНА C: материал. Одно фото, наезд -->
+<section class="scene" id="sceneC" style="height:400vh" data-chap="06 Стена" data-scene="Сцена C, одно фото, наезд в материал">
+  <div class="stage">
+    <div class="layer" id="c1"><img src="img/c1-facade-seams.jpg" alt="Фасад со швами"><div class="src" style="opacity:1">Кадр C1, фото стройки клиента. На сайте фасад со швами в высоком разрешении</div></div>
+    <div class="layer" id="c2" style="opacity:0"><img src="img/c2-concrete.jpg" alt="Бетон крупно"><div class="src" style="opacity:1">Кадр C2, подмена: MIR Casa Ohana, бетон и вечерний свет. На сайте наш фасад крупно</div></div>
+    <div class="strip" id="sc"><span class="n">06</span><span>Стена</span><span class="r">трёхслойная панель с завода</span></div>
+    <div class="txt" id="tc1">
+      <div><h2>Стена приезжает готовой.</h2><p class="md">Трёхслойная панель с завода: бетон, утеплитель, бетон. Высота до 3,56 м, длина до 6,5 м, на место её ставит кран.</p></div><div></div>
+      <div class="facts"><div class="fact"><b>35 см</b><i>стена</i></div><div class="fact"><b>3,56 м</b><i>высота</i></div><div class="fact"><b>6,5 м</b><i>длина</i></div></div>
+    </div>
+    <div class="txt" id="tc2">
+      <div><h2>Дом на поколения.</h2><p class="md">Железобетон служит от 100 лет. Класс конструктивной пожарной опасности высший.</p></div><div></div>
+      <div class="facts"><div class="fact big"><b>от 100 лет</b><i>срок службы</i></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ПЕРЕХОД C → D: отъезд до дрона -->
+<section class="scene" id="cd" style="height:200vh" data-chap="Переход C → D" data-scene="отъезд от материала до дома с дрона">
+  <div class="stage">
+    <div class="layer" id="cd1"><img src="img/c2-concrete.jpg" alt=""></div>
+    <div class="layer" id="cd2" style="opacity:0"><img src="img/d1-drone.jpg" alt="Алексино с дрона"><div class="src" style="opacity:1">Переход. Алексино с дрона, фото клиента</div></div>
+    <div class="tr" id="tr5" style="opacity:1"><b>Переход C → D</b>На сайте: отъезд от материала вверх и назад до дома с дрона. Либо видео с дрона, которое начинается у стены, либо два кадра с растворением.<i>В аниматике: растворение двух фото.</i></div>
+  </div>
+</section>
+
+<!-- СЦЕНА D: вживую и кто -->
+<section class="flat" id="live" data-chap="07 Вживую" data-scene="Сцена D, фото и списки">
+  <div class="wrap">
+    <div class="cs"><span class="n">07</span><span>Вживую</span><span class="r">выставочный дом в Алексино</span></div>
+    <div class="row">
+      <div class="c7"><div class="ph h520"><img src="img/d1-drone.jpg" alt="Алексино с дрона"><span class="cap">Кадр D1, Алексино с дрона, лето</span></div></div>
+      <div class="c4 off1"><h2 class="t">Выставочный дом в Алексино.</h2><p class="md">Дом в тёплом контуре, 156 м², можно пройти по комнатам и посмотреть стену вблизи. Раз в две недели здесь день общения с архитектором.</p><div class="btns"><span class="btn1">Записаться на показ</span><span class="btn2">Все дома</span></div></div>
+    </div>
+    <div class="rows"><div class="h"><span>Дом</span><span>Место</span><span>Площадь</span><span>Состояние</span></div><div><b>Алексино</b><span>Истра</span><span>156 м²</span><span>выставочный дом</span></div><div><b>[Дом]</b><span>[место]</span><span>[м²]</span><span>строится</span></div><div><b>[Дом]</b><span>[место]</span><span>[м²]</span><span>строится</span></div><div><b>[Проект]</b><span>[место]</span><span>[м²]</span><span>проект</span></div></div>
+  </div>
+</section>
+
+<section class="scene" id="who" style="height:160vh" data-chap="08 Кто за домом" data-scene="Сцена D, фото и списки">
+  <div class="stage">
+    <div class="layer" id="d2"><img src="img/d2-factory-wide.jpg" alt="Завод"><div class="src" style="opacity:1">Кадр D2, цех завода, фото клиента, нужна съёмка</div></div>
+    <div class="strip" style="opacity:1"><span class="n">08</span><span>Кто за домом</span><span class="r">ФинСтройПанель, свой завод</span></div>
+    <div class="txt" id="td2" style="opacity:1">
+      <div><h2>ФСП АРТ. Направление ФинСтройПанели.</h2><p class="md">Свой завод в Пскове, 350 домов за пять лет. Новое направление делает дома по индивидуальным проектам для Москвы и области.</p><span class="link" style="color:#fff;border-color:#fff">О компании →</span></div><div></div>
+      <div class="facts"><div class="fact"><b>350</b><i>домов</i></div><div class="fact"><b>5</b><i>лет</i></div><div class="fact"><b>свой</b><i>завод в Пскове</i></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="flat" data-chap="Три цифры" data-scene="Сцена D, фото и списки">
+  <div class="wrap" style="padding-top:64px;padding-bottom:64px">
+    <div class="three"><div class="fact"><b>6 месяцев</b><i>стройки до тёплого контура</i></div><div class="fact"><b>130 000 ₽</b><i>за м² тёплого контура</i></div><div class="fact"><b>от 100 лет</b><i>срок службы</i></div></div>
+  </div>
+</section>
+
+<!-- СЦЕНА E: разговор -->
+<section class="flat grey" id="talk" data-chap="09 Разговор с архитектором" data-scene="Сцена E, форма, движения нет">
+  <div class="wrap">
+    <div class="form">
+      <div><div class="mono" style="margin-bottom:16px">Разговор с архитектором</div><h2 class="t">Разговор с архитектором</h2><p class="md" style="color:var(--muted)">Расскажите, на какой вы стадии и где участок. Перезвоним, ответим на вопросы и позовём в Алексино.</p>
+        <div class="steps" style="margin-top:32px"><div><span class="mono">1</span><b>Перезвоним в течение дня</b><i>Уточним участок и задачу</i></div><div><span class="mono">2</span><b>Встреча с архитектором</b><i>Онлайн или на выставочном доме в Алексино</i></div><div><span class="mono">3</span><b>Участок и проект</b><i>Архитектор и прораб смотрят участок</i></div></div></div>
+      <div></div>
+      <div>
+        <div class="field"><label>На какой вы стадии</label><div class="opts"><span>Присматриваюсь</span><span>Есть участок</span><span>Есть проект</span><span>Готов строить</span></div></div>
+        <div class="field"><label>Где участок</label><div class="in">Например, Истра</div></div>
+        <div class="field"><label>Ориентир бюджета</label><div class="opts"><span>до 40 млн ₽</span><span>от 40 до 70 млн ₽</span><span>больше 70 млн ₽</span></div></div>
+        <div class="field"><label>Жили ли вы в своём доме</label><div class="opts"><span>Да</span><span>Нет</span></div></div>
+        <div class="field"><label>Имя</label><div class="in">Как к вам обращаться</div></div>
+        <div class="field"><label>Телефон</label><div class="in">+7</div></div>
+        <div class="btns"><span class="btn1">Отправить</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div><b>ФСП АРТ</b><p class="sm">Направление ФинСтройПанели. Капитальные дома по индивидуальным проектам под Москвой.</p><p><span class="link">fspanel.ru →</span></p></div>
+    <div><div class="mono">Страницы</div><p>Как мы строим</p><p>Индивидуальный проект</p><p>Дома</p><p>О компании</p></div>
+    <div><div class="mono">Второй этап</div><p class="sm">Технология, Стоимость, Журнал, Вопросы и ответы, Москва</p></div>
+    <div><div class="mono">Связь</div><p>Телефон направления (ждём от Максима)</p><p>Выставочный дом: Алексино, Истра</p><p class="sm">Канал Антона Боева: YouTube, Telegram</p></div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/Observer.min.js"></script>
+<script>
+(function(){
+  if (!window.gsap || !window.ScrollTrigger) return;
+  gsap.registerPlugin(ScrollTrigger);
+  const $ = s => document.querySelector(s);
+  const $$ = s => Array.from(document.querySelectorAll(s));
+  const chap = $('#chap'), scene = $('#scene');
+  const setChap = (c, s) => { if (c) chap.textContent = c; if (s) scene.textContent = s; };
+
+  /* Сцена A: один таймлайн, прокрутка ведёт. Время сцены задано в секундах (Максим 27.10: три щелчка, вся сцена — цепочка
+     синусов: каждая часть с плавным началом и мягкой остановкой, следующая начинается там, где кончилась предыдущая, без пауз).
+     В шаге прокрутка идёт ровно, поэтому секунды и доли прокрутки пропорциональны: SA — доли, T(сек) — перевод */
+  const TT = 14.6, T = (s) => s / TT;
+  const SA = window.SA = {
+    // щелчок 1, 5 с (Максим 27.10: все три прокрута около 5 с, внутри шага всё сжато пропорционально)
+    a1dis0:T(0), a1bg1:T(0.95),         // фон уходит от дома к краям
+    a1h0:T(0.95), a1dis1:T(1.9),        // дом уходит в чертёж
+    tr1a:T(1.9), tr1b:T(3.2),           // облёт на другую сторону
+    a2rev0:T(3.2), a2rev1:T(4.05),      // из линий проявляется фасад; надписи 4,0–5,0
+    // щелчок 2, 5 с: надписи и фасад уходят → облёт к угловому окну А и влёт в гостиную → тёплый контур → надписи
+    a2dis0:T(5.0), a2dis1:T(5.8),
+    tr2a:T(5.8), tr2b:T(8.45),
+    a3c0:T(8.45), a3c1:T(9.45),         // голые панели, без мебели; надписи 9,2–9,9
+    // щелчок 3, 4,6 с: гостиная уходит в линии → подъём строго вверх → лист плана
+    a3dis0:T(10.0), a3dis1:T(11.0),
+    tr3a:T(11.0), tr3b:T(13.0),
+    a4rev0:T(13.0), a4rev1:T(14.1),
+    steps:[0, T(5.0), T(10.0), 1], T,
+  };
+  const A = gsap.timeline({ defaults:{ ease:'sine.inOut' }, scrollTrigger:{ trigger:'#sceneA', start:'top top', end:'bottom bottom', scrub:0.6,
+    onUpdate(st){ const p = st.progress;
+      setChap(p<SA.tr1a?'00 Первый экран':p<SA.tr2b?'01 Снаружи':p<SA.tr3a?'02 Внутри':'03 У дома есть автор', 'Сцена A, одна 3D-модель, одна камера'); } } });
+  window.__A = A;
+  A.to('#t1',{opacity:0,duration:T(0.45)},T(0.35))
+   .to('#srcA1',{opacity:0,duration:T(0.2)},T(0.15))
+   /* 01: фасад */
+   .to('#s1',{opacity:1,duration:T(0.35)},T(4.0))
+   .to('#srcA2',{opacity:1,duration:T(0.2)},T(4.05))
+   .to('#t2',{opacity:1,duration:T(0.45)},T(4.05))
+   .to('#co .co:nth-child(1)',{opacity:1,duration:T(0.35)},T(4.3))
+   .to('#co .co:nth-child(2)',{opacity:1,duration:T(0.35)},T(4.45))
+   .to('#co .co:nth-child(3)',{opacity:1,duration:T(0.35)},T(4.65))
+   .to(['#t2','#s1','#co .co','#srcA2'],{opacity:0,duration:T(0.3)},T(5.0))
+   /* 02: гостиная, тёплый контур (отделка с мебелью — позже, под новый ракурс) */
+   .to('#srcA3c',{opacity:1,duration:T(0.25)},T(9.2))
+   .to('#s2',{opacity:1,duration:T(0.4)},T(9.4))
+   .to('#t3',{opacity:1,duration:T(0.45)},T(9.45))
+   .to(['#t3','#s2','#srcA3c'],{opacity:0,duration:T(0.4)},T(10.0))
+   /* 03: лист плана */
+   .to('#s3',{opacity:1,duration:T(0.4)},T(13.9))
+   .to('#t4',{opacity:1,duration:T(0.5)},T(14.0))
+   .to('#stamp',{opacity:1,duration:T(0.4)},T(14.1))
+   .to('#srcA4',{opacity:1,duration:T(0.3)},T(14.2))
+   /* карточки переходов */
+   .to('#tr1',{opacity:1,duration:T(0.2)},T(1.95)).to('#tr1',{opacity:0,duration:T(0.2)},T(2.9))
+   .to('#tr2',{opacity:1,duration:T(0.25)},T(5.85)).to('#tr2',{opacity:0,duration:T(0.25)},T(8.1))
+   .to('#tr3',{opacity:1,duration:T(0.3)},T(11.1)).to('#tr3',{opacity:0,duration:T(0.3)},T(12.6))
+   .set({}, {}, 1);   // длина таймлайна ровно 1: прогресс таймлайна = доля прокрутки = SA
+
+  /* Сцена A по шагам (Максим 27.10): один щелчок колеса, свайп или клавиша — один шаг, шаг доигрывает сам.
+     Ключи шага: [прогресс, секунды]; прокрутка в шаге идёт ровно (время сцены в SA уже в секундах), изинги — у частей сцены,
+     скраб 0.6 сглаживает старт и остановку. Назад — те же ключи в обратном порядке. ?free — прежняя свободная прокрутка */
+  const STEPS = [
+    { at: 0 },
+    { at: SA.steps[1], keys: [[SA.steps[1], 5.0]] },   // фон уходит, чертёж, облёт, фасад, надписи
+    { at: SA.steps[2], keys: [[SA.steps[2], 5.0]] },   // облёт к угловому окну, влёт, тёплый контур, надписи
+    { at: 1, keys: [[1, 4.6]] },                        // подъём к плану
+  ];
+  const qsA = new URLSearchParams(location.search);
+  if (window.Observer && !qsA.has('p') && !qsA.has('free')) {
+    gsap.registerPlugin(Observer);
+    const st = A.scrollTrigger;
+    const yOf = (p) => Math.min(st.end - 1, st.start + p * (st.end - st.start));   // на последнем шаге не выходим за конец: иначе срабатывает onLeave и шаги выключаются
+    const nearest = (p) => STEPS.reduce((b, s, i) => (Math.abs(s.at - p) < Math.abs(STEPS[b].at - p) ? i : b), 0);
+    const pos = { p: 0 };
+    let busy = false, fresh = true, lastEvt = 0;
+    // один жест — один шаг: новый жест, когда между событиями пауза (хвост инерции трекпада шага не запускает)
+    const mark = () => { const t = performance.now(); if (t - lastEvt > 220) fresh = true; lastEvt = t; };
+    window.addEventListener('wheel', mark, { passive: true });
+    window.addEventListener('touchstart', () => { fresh = true; lastEvt = performance.now(); }, { passive: true });
+    function play(dir) {
+      if (busy || !fresh) return;
+      fresh = false;
+      const cur = st.progress, i = nearest(cur), to = i + dir;
+      if (to < 0) return;
+      if (to >= STEPS.length) { release(); return; }
+      const s = dir > 0 ? STEPS[to] : STEPS[i];
+      const p0 = dir > 0 ? STEPS[i].at : STEPS[to].at;
+      // отрезки шага: вперёд [p0 → k1 → … → at], назад те же в обратном порядке с теми же длительностями
+      let segs = s.keys.map(([p, d], k) => ({ from: k ? s.keys[k - 1][0] : p0, to: p, d }));
+      if (dir < 0) segs = segs.reverse().map((g) => ({ from: g.to, to: g.from, d: g.d }));
+      segs = segs.filter((g) => (dir > 0 ? g.to > cur + 1e-4 : g.to < cur - 1e-4));
+      if (!segs.length) return;
+      busy = true; pos.p = cur;
+      const tl = gsap.timeline({ onUpdate: () => window.scrollTo(0, yOf(pos.p)), onComplete: () => { busy = false; } });
+      segs.forEach((g, k) => {   // первый отрезок может начаться с середины (вошли в сцену снизу, тянули ползунок): длительность по остатку
+        const part = k === 0 && Math.abs(g.to - g.from) > 1e-6 ? Math.min(1, Math.abs(g.to - cur) / Math.abs(g.to - g.from)) : 1;
+        tl.to(pos, { p: g.to, duration: g.d * part, ease: 'none' });
+      });
+    }
+    const obs = Observer.create({ target: window, type: 'wheel,touch', wheelSpeed: -1, tolerance: 10, preventDefault: true,
+      onUp: () => play(1), onDown: () => play(-1) });
+    // ниже сцены — обычная прокрутка; вернулись в сцену снизу — снова шаги
+    function release() {
+      obs.disable(); busy = true;
+      const y = { v: window.scrollY };
+      gsap.to(y, { v: y.v + window.innerHeight * 0.6, duration: 0.7, ease: 'power2.out', onUpdate: () => window.scrollTo(0, y.v), onComplete: () => { busy = false; } });
+    }
+    ScrollTrigger.create({ trigger: '#sceneA', start: 'top top', end: 'bottom bottom', onEnterBack: () => obs.enable(), onLeave: () => obs.disable() });
+    window.addEventListener('keydown', (e) => {
+      if (!obs.isEnabled || e.altKey || e.ctrlKey || e.metaKey) return;
+      const d = ['ArrowDown', 'PageDown', ' '].includes(e.key) ? 1 : ['ArrowUp', 'PageUp'].includes(e.key) ? -1 : 0;
+      if (!d) return;
+      e.preventDefault(); fresh = true; play(d);
+    });
+    // открыли страницу посреди сцены: встать на ближайший шаг
+    requestAnimationFrame(() => { if (window.scrollY < st.end) window.scrollTo(0, yOf(STEPS[nearest(st.progress)].at)); });
+    window.__steps = { STEPS, play, obs };
+  }
+
+  /* Переход B → C */
+  gsap.timeline({scrollTrigger:{trigger:'#bc',start:'top top',end:'bottom bottom',scrub:0.6}})
+    .to('#bc2',{opacity:1,duration:0.5},0.25)
+    .fromTo('#bc1 img',{scale:1.0},{scale:1.08,duration:1,ease:'none'},0)
+    .fromTo('#bc2 img',{scale:1.08},{scale:1.0,duration:1,ease:'none'},0)
+    .to('#tbc',{opacity:0,duration:0.2},0.75);
+
+  /* Сцена C: наезд в материал */
+  const C = gsap.timeline({scrollTrigger:{trigger:'#sceneC',start:'top top',end:'bottom bottom',scrub:0.6,
+    onUpdate(st){ setChap(st.progress<0.55?'06 Стена':'06 Дом на поколения','Сцена C, одно фото, наезд в материал'); }}});
+  C.to('#sc',{opacity:1,duration:0.05},0.02)
+   .to('#tc1',{opacity:1,duration:0.06},0.04)
+   .to('#tc1',{opacity:0,duration:0.05},0.38)
+   .fromTo('#c1 img',{scale:1.0},{scale:2.4,duration:0.55,ease:'power1.in'},0.3)
+   .to('#c2',{opacity:1,duration:0.14},0.5)
+   .fromTo('#c2 img',{scale:1.2},{scale:1.0,duration:0.3,ease:'none'},0.5)
+   .to('#tc2',{opacity:1,duration:0.06},0.68);
+
+  /* Переход C → D: отъезд */
+  gsap.timeline({scrollTrigger:{trigger:'#cd',start:'top top',end:'bottom bottom',scrub:0.6}})
+    .fromTo('#cd1 img',{scale:1.0},{scale:1.35,duration:1,ease:'none'},0)
+    .to('#cd2',{opacity:1,duration:0.5},0.2)
+    .fromTo('#cd2 img',{scale:1.3},{scale:1.0,duration:0.9,ease:'none'},0.1)
+    .to('#tr5',{opacity:0,duration:0.15},0.8);
+
+  /* Кто за домом: лёгкий параллакс */
+  gsap.fromTo('#d2 img',{scale:1.08},{scale:1.0,ease:'none',scrollTrigger:{trigger:'#who',start:'top top',end:'bottom bottom',scrub:0.6}});
+
+  /* Подписи глав для обычных секций и переходов */
+  $$('[data-chap]').forEach(el => { if (el.id==='sceneA'||el.id==='sceneC') return;
+    ScrollTrigger.create({trigger:el,start:'top 55%',end:'bottom 55%',onEnter:()=>setChap(el.dataset.chap,el.dataset.scene),onEnterBack:()=>setChap(el.dataset.chap,el.dataset.scene)}); });
+
+  /* Глава 05: прокрутка ведёт неделю, рисунок сборки и линию недель */
+  const WK = [0,4,8,12,14,17,21,26];
+  const wkEl = $('#wk'), wfs = $$('#draw .wf'), segs = $$('#weeks .seg'), now = $('#now');
+  const setWeek = w => {
+    wkEl.textContent = String(w).padStart(2,'0');
+    let idx = 0; WK.forEach((k,i) => { if (k <= w) idx = i; });
+    wfs.forEach((im,i) => im.classList.toggle('on', i===idx));
+    segs.forEach(sg => { const a = +sg.dataset.a, b = +sg.dataset.b; const f = Math.max(0, Math.min(1, (w - a) / Math.max(1, b - a))); sg.style.transform = 'scaleX(' + f + ')'; });
+    if (now) now.style.left = (w / 26 * 100) + '%';
+  };
+  setWeek(0);
+  ScrollTrigger.create({trigger:'#term', start:'top top', end:'bottom bottom', scrub:0.4, onUpdate(st){ setWeek(Math.min(26, Math.floor(st.progress * 27))); }});
+
+  /* Переключатель стадий: клик и автосмена по прокрутке */
+  const tabs = $$('#tabs button'), imgs = $$('#stages img');
+  const setStage = i => { tabs.forEach((b,k)=>b.classList.toggle('on',k===i)); imgs.forEach((im,k)=>im.classList.toggle('on',k===i)); };
+  tabs.forEach(b => b.addEventListener('click',()=>setStage(+b.dataset.i)));
+  ScrollTrigger.create({trigger:'#price',start:'top 40%',end:'bottom 60%',onUpdate(st){ setStage(Math.min(2,Math.floor(st.progress*3))); }});
+
+  /* Мягкое появление обычных глав */
+  $$('section.flat .wrap').forEach(w => gsap.fromTo(w,{opacity:0.001,y:24},{opacity:1,y:0,duration:0.9,ease:'power2.out',scrollTrigger:{trigger:w,start:'top 85%',once:true}}));
+})();
+</script>
+
+<!-- Сцена A на канвасе: линейная модель Алексино (IFC, через alexino-mir/final/alexino-panels.json) ведёт камеру,
+     в точках остановки из линий по глубине кадра проявляется готовый кадр с той же камеры.
+     Линии и проявление взяты из теста «Из чертежа в дом» (test-iz-chertezha/index.html), переписаны под эту сцену. -->
+<script src="img/frames-data.js"></script>
+<script src="img/frames-clean.js"></script>
+<script src="img/frames-facade.js"></script>
+<script src="img/frames-interior.js"></script>
+<script type="module">
+(async () => {
+const qs = new URLSearchParams(location.search);
+const FORCE_P = qs.has('p') ? parseFloat(qs.get('p')) : null;   // служебно: кадр по прогрессу без прокрутки
+const LINES_ONLY = qs.has('lines');                               // служебно: без фото, для сверки линий с кадрами
+const A3W = ((F) => F['a3w' + qs.get('i')] ? 'a3w' + qs.get('i') : F.a3w ? 'a3w' : F.a3w1 ? 'a3w1' : null)(window.FRAMES || {});   // тёплый контур; ?i=1 и ?i=3 — варианты бетона на выбор заказчика (2 Максим отклонил)
+const A3W_NAMES = { a3w1: 'гладкие заводские панели', a3w3: 'архитектурный бетон' };
+if (qs.has('i') && A3W_NAMES[A3W]) document.title = 'бетон ' + A3W.slice(3) + ' · ' + A3W_NAMES[A3W] + ' · ' + document.title;
+const canvas = document.getElementById('aCanvas');
+const fbEl = document.getElementById('aFallback');
+const SA = window.SA, A = window.__A;
+if (!window.gsap || !A) return;
+
+// Без WebGL: последовательность кадров с растворением, тот же порядок
+function fallback() {
+  canvas.hidden = true; fbEl.hidden = false;
+  const fk = 'fa' + (['1', '2', '3'].includes(qs.get('f')) ? qs.get('f') : '3'), hasFa = !!(window.FRAMES || {})[fk];   // A2: фасад с другой стороны
+  const im = ['a2', hasFa ? fk : 'a2', hasFa && A3W ? A3W : 'a3c', 'a3f', 'a4'].map((k, i) => {
+    const el = document.createElement('img'); el.src = (window.FRAMES || {})[k] || ''; el.alt = '';
+    if (i) el.style.opacity = '0'; if (k === 'a4') el.style.cssText += 'object-fit:contain;background:var(--bg)';
+    if (i === 1 && !hasFa) el.style.cssText += 'transform:scale(1.55);transform-origin:50% 58%';   // без кадров фасада: тот же кадр с наездом
+    fbEl.appendChild(el); return el;
+  });
+  gsap.timeline({ scrollTrigger: { trigger: '#sceneA', start: 'top top', end: 'bottom bottom', scrub: 0.6 } })
+    .to(im[0], { opacity: 0, duration: SA.a1dis1 - SA.a1dis0, ease: 'sine.inOut' }, SA.a1dis0)
+    .to(im[1], { opacity: 1, duration: SA.a2rev1 - SA.a2rev0, ease: 'sine.inOut' }, SA.a2rev0).to(im[1], { opacity: 0, duration: SA.a2dis1 - SA.a2dis0, ease: 'sine.inOut' }, SA.a2dis0)
+    .to(im[2], { opacity: 1, duration: SA.a3c1 - SA.a3c0, ease: 'sine.inOut' }, SA.a3c0)   // отделка (im[3]) пока не показывается
+    .to(im[2], { opacity: 0, duration: SA.a3dis1 - SA.a3dis0, ease: 'sine.inOut' }, SA.a3dis0)
+    .to(im[4], { opacity: 1, duration: SA.a4rev1 - SA.a4rev0, ease: 'sine.inOut' }, SA.a4rev0);
+}
+let THREE;
+try {
+  const probe = document.createElement('canvas');
+  if (!probe.getContext('webgl2') && !probe.getContext('webgl')) throw new Error('нет WebGL');
+  THREE = await import('https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js');
+} catch (e) { console.warn('Сцена A: живая модель недоступна, показываю кадры', e); fallback(); return; }
+
+// ------------------------------------------------------------------
+// Помощники
+// ------------------------------------------------------------------
+const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
+const sv = (h) => new THREE.Vector3(((h >> 16) & 255) / 255, ((h >> 8) & 255) / 255, (h & 255) / 255);
+const clamp01 = (x) => Math.min(1, Math.max(0, x));
+const seg = (t, a, b) => clamp01((t - a) / (b - a));
+const sstep = (x) => x * x * (3 - 2 * x);
+const easeInOut = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const lerp = (a, b, t) => a + (b - a) * t;
+const eq = (t) => t < 0.5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t);   // квадратичный in-out, как в блоке «Этапы и сроки»
+const ez = (t) => 0.5 - 0.5 * Math.cos(Math.PI * t);                   // синус in-out: один изинг на все части сцены A (Максим 27.10)
+const rad = THREE.MathUtils.degToRad, deg = THREE.MathUtils.radToDeg;
+const COL = { paper: 0xF3F1EC, ink: 0x2A2C30, dim: 0xB9B5AD, acc: 0x6B7A40 };
+const MOB = window.innerWidth < 900;
+
+// ------------------------------------------------------------------
+// Дом Алексино из IFC: alexino-mir/final/alexino-panels.json (метры; x вправо, y вглубь, z вверх).
+// kind: w наружный слой НС (80 мм, панель 350 мм внутрь), p парапет, i внутренняя стена, s монолитная плита, f фундамент.
+// Здесь переведено в оси теста «Из чертежа в дом»: x вдоль осей 1→4, y вверх, z на юг (x = x + 7,05; z = −y − 7,3).
+// ------------------------------------------------------------------
+const ELS = [["w","Concrete_НС-101-2",[-1.05,-0.93,3.59,3.67,3.3,3.62],[]],["w","Concrete_НС-101-2",[-1.05,-0.93,-6.96,-6.88,3.3,3.62],[]],["w","Concrete_НС-101-1",[-1.2,-1.05,3.59,3.67,3.3,4.2],[]],["w","Concrete_НС-101-1",[-1.2,-1.05,-6.96,-6.88,3.3,4.2],[]],["w","ExL-44",[-0.78,1.98,-6.15,-6.07,-0.15,2.87],[[-0.23,0.79,-6.07,-6.07,0.0,2.15]]],["w","ExL-43",[2.0,7.2,-6.15,-6.07,-0.15,3.37],[]],["w","ExL-42",[-1.28,-1.2,-1.685,3.67,3.3,4.2],[]],["w","ExL-41",[-1.28,-1.2,-6.96,-1.705,3.3,4.2],[]],["p","InL-186",[-8.19,-8.03,2.58,8.14,2.8,3.7],[]],["p","InL-185",[-8.19,-8.03,-2.96,2.56,2.8,3.7],[]],["p","InL-146",[-1.495,2.31,7.98,8.14,2.8,3.7],[]],["p","InL-145",[-8.01,-3.07,-8.44,-8.28,2.8,3.7],[]],["p","InL-144",[2.33,2.49,2.88,8.14,2.8,3.7],[]],["p","InL-143",[-8.01,-1.515,7.98,8.14,2.8,3.7],[]],["p","InL-142",[-8.19,-8.03,-8.44,-2.98,2.8,3.7],[]],["p","InL-141",[-3.05,1.8,-8.44,-8.28,2.8,3.7],[]],["p","InL-140",[1.82,1.98,-8.44,-6.16,2.8,3.7],[]],["p","InL-139",[7.95,8.11,-6.96,-1.705,3.3,4.2],[]],["p","InL-138",[-0.91,3.56,-6.96,-6.8,3.3,4.2],[]],["p","InL-137",[3.5,7.93,3.51,3.67,3.3,4.2],[]],["p","InL-136",[3.58,7.93,-6.96,-6.8,3.3,4.2],[]],["p","InL-135",[7.95,8.11,-1.685,3.67,3.3,4.2],[]],["p","InL-134",[-0.91,3.48,3.51,3.67,3.3,4.2],[]],["i","Concrete_ВС-101-9",[-1.05,-0.93,-5.85,-3.595,-0.15,2.91],[]],["i","Concrete_ВС-101-8",[-7.03,-1.0,2.51,2.63,-0.15,2.91],[]],["w","ExL-40",[-7.4,-7.32,2.58,7.35,-0.15,2.87],[]],["w","ExL-39",[-7.4,-7.32,-1.09,2.56,-0.15,2.87],[[-7.32,-7.32,-0.195,1.715,-0.0,2.305],[-7.4,-7.4,-0.19,1.71,-0.0,2.3]]],["w","ExL-38",[7.22,7.3,-6.15,-0.605,-0.15,3.37],[[7.3,7.3,-3.541,-1.141,0.0,2.75],[7.22,7.22,-3.546,-1.136,0.0,2.755]]],["w","ExL-37",[-1.495,1.6,7.27,7.35,-0.15,2.87],[[-1.035,0.375,7.27,7.27,-0.0,2.305],[-1.03,0.37,7.35,7.35,-0.0,2.3]]],["i","Concrete_ВС-101-7",[-1.05,-0.93,-2.07,2.49,-0.15,2.91],[]],["i","Concrete_ВС-101-6",[-0.98,1.4,2.51,2.63,-0.15,2.91],[]],["s","Concrete_F-1-2",[-8.09,2.39,-8.34,8.04,2.9,3.1],[]],["s","Concrete_F-1-1",[-1.05,8.01,-6.86,3.57,3.4,3.6],[]],["w","ExL-36",[-7.3,-0.8,-7.65,-7.57,-0.15,2.87],[[-5.145,-4.055,-7.57,-7.57,0.9,2.305],[-5.14,-4.06,-7.65,-7.65,0.9,2.3]]],["w","ExL-35",[-0.78,-0.7,-7.63,-6.17,-0.15,2.87],[]],["w","ExL-34",[7.22,7.28,-0.585,2.84,-0.15,3.37],[]],["w","ExL-33",[1.62,7.2,2.78,2.86,-0.15,3.37],[[2.895,6.305,2.78,2.78,0.0,2.755],[2.9,6.3,2.86,2.86,0.0,2.75]]],["w","ExL-32",[1.62,1.7,2.88,7.33,-0.15,2.87],[]],["w","ExL-31",[-7.3,-1.515,7.27,7.35,-0.15,2.87],[[-6.305,-3.895,7.27,7.27,-0.0,2.305],[-3.085,-1.975,7.27,7.27,-0.0,2.305],[-6.3,-3.9,7.35,7.35,-0.0,2.3],[-3.08,-1.98,7.35,7.35,-0.0,2.3]]],["w","ExL-30",[-7.4,-7.32,-7.65,-1.11,-0.15,2.87],[[-7.32,-7.32,-6.5,-5.48,0.0,2.3],[-7.32,-7.32,-3.815,-1.905,-0.0,2.305],[-7.4,-7.4,-3.81,-1.91,-0.0,2.3]]],["f","Бетон_Фп-1-1",[-8.49,8.49,-7.97,8.44,-0.47,-0.17],[]]];
+const OFF_X = 7.05, OFF_Z = 7.3, PANEL = 0.35, EXP = 0.045;
+// куда у наружной панели «внутрь дома» (в осях json: dx, dy)
+const INWARD = { 'ExL-44': [0, 1], 'ExL-43': [0, 1], 'ExL-40': [1, 0], 'ExL-39': [1, 0], 'ExL-30': [1, 0], 'ExL-38': [-1, 0], 'ExL-34': [-1, 0],
+  'ExL-37': [0, -1], 'ExL-31': [0, -1], 'ExL-33': [0, -1], 'ExL-32': [-1, 0], 'ExL-36': [0, 1], 'ExL-35': [-1, 0] };
+// угловое окно кухни-гостиной: выемки по КЖИ (НС-110, НС-109), в json их нет
+const NOTCH = { 'ExL-43': [[3.895, 7.2, -6.15, -6.15, 0.9, 2.155]], 'ExL-38': [[7.3, 7.3, -6.15, -4.906, 0.9, 2.155]] };
+// перегородки и полы по АР из теста (уже в осях теста): [x0, x1, z0, z1, верх]
+const PARTS = [[5.75, 5.83, -14.3, -11.285, 2.9], [5.75, 5.83, -10.485, -9.93, 2.9], [0, 4.46, -6.22, -6.14, 2.9],
+  [4.46, 4.54, -9.81, -7.51, 2.9], [4.46, 4.54, -6.61, -5.71, 2.9], [4.46, 4.54, -4.81, -2.6, 2.9], [0, 4.63, -2.6, -2.52, 2.9], [5.53, 6.0, -2.6, -2.52, 2.9],
+  [3.125, 3.205, -2.52, -1.635, 2.9], [3.125, 3.205, -0.735, 0, 2.9], [8.4, 8.52, -9.81, -5.27, 3.4], [6.12, 8.4, -6.87, -6.79, 3.4],
+  [6.12, 6.82, -5.35, -5.27, 3.4], [7.62, 8.4, -5.35, -5.27, 3.4], [6.12, 6.72, -3.705, -3.625, 3.4]];
+const FLOORS = [[8.52, 14.0, 0, 0.008, -9.81, -1.5], [6.12, 8.52, 0, 0.008, -5.27, -1.5]];
+// обстановка кадра M (под неё сняты фото гостиной): диван, ковёр, столик, скамья
+const FURN = [[12.65, 13.75, 0, 0.42, -8.3, -4.8], [13.48, 13.75, 0.42, 0.74, -8.3, -4.8], [11.2, 12.65, 0, 0.42, -8.3, -7.35], [11.2, 12.65, 0.42, 0.74, -8.3, -8.08],
+  [9.6, 12.6, 0, 0.012, -9.0, -5.0], [10.6, 11.7, 0.32, 0.36, -7.0, -6.2], [10.95, 11.35, 0, 0.32, -6.8, -6.4], [8.52, 8.98, 0, 0.42, -9.3, -5.6]];
+
+// ------------------------------------------------------------------
+// Геометрия: коробки с проёмами насквозь. Грани для глубины (бумага), линии с нормалями двух соседних граней
+// для шейдера линий: силуэт чернилами, складка тускло, вертикальные складки не рисуем
+// ------------------------------------------------------------------
+function cells(a0, a1, b0, b1, rects) {
+  const as = [a0, a1], bs = [b0, b1];
+  for (const r of rects) { as.push(Math.max(a0, Math.min(a1, r[0])), Math.max(a0, Math.min(a1, r[1]))); bs.push(Math.max(b0, Math.min(b1, r[2])), Math.max(b0, Math.min(b1, r[3]))); }
+  const uq = (arr) => { const s = [...arr].sort((x, y) => x - y); return s.filter((v, i) => i === 0 || v - s[i - 1] > 1e-6); };
+  const A = uq(as), B = uq(bs), out = [];
+  for (let i = 0; i < A.length - 1; i++) for (let j = 0; j < B.length - 1; j++) {
+    const ca = (A[i] + A[i + 1]) / 2, cb = (B[j] + B[j + 1]) / 2;
+    if (rects.some((r) => ca > r[0] && ca < r[1] && cb > r[2] && cb < r[3])) continue;
+    out.push([A[i], A[i + 1], B[j], B[j + 1]]);
+  }
+  return out;
+}
+class Solid {
+  constructor() { this.faces = []; }
+  // квадрат: четыре точки, ожидаемое направление нормали (наружу от тела), пометка h для откосов проёма
+  quad(p, expect, h = false) {
+    const e1 = V3(...p[1]).sub(V3(...p[0])), e2 = V3(...p[3]).sub(V3(...p[0]));
+    const n = e1.cross(e2); if (n.lengthSq() < 1e-12) return; n.normalize();
+    if (n.dot(V3(...expect)) < 0) n.negate();
+    this.faces.push({ p, n: [n.x, n.y, n.z], h });
+  }
+  tris(out) { for (const f of this.faces) { const [a, b, c, d] = f.p; out.push(...a, ...b, ...c, ...a, ...c, ...d); } }
+  // линии: рёбра граней сводятся на общие прямые, отрезок рисуется там, где перекрываются рёбра двух разных по нормали граней
+  lines(out, holeOut) {
+    const lines = new Map();
+    this.faces.forEach((f, fi) => {
+      for (let k = 0; k < 4; k++) {
+        const p = f.p[k], q = f.p[(k + 1) % 4];
+        let d = [q[0] - p[0], q[1] - p[1], q[2] - p[2]]; const L = Math.hypot(...d); if (L < 1e-6) continue; d = d.map((v) => v / L);
+        const lead = Math.abs(d[0]) > 1e-6 ? d[0] : Math.abs(d[1]) > 1e-6 ? d[1] : d[2]; if (lead < 0) d = d.map((v) => -v);
+        const tp = p[0] * d[0] + p[1] * d[1] + p[2] * d[2], tq = q[0] * d[0] + q[1] * d[1] + q[2] * d[2];
+        const o = [p[0] - d[0] * tp, p[1] - d[1] * tp, p[2] - d[2] * tp];
+        const key = d.map((v) => Math.round(v * 1000)).join(',') + '|' + o.map((v) => Math.round(v * 2000)).join(',');
+        if (!lines.has(key)) lines.set(key, { d, o, e: [] });
+        lines.get(key).e.push({ t0: Math.min(tp, tq), t1: Math.max(tp, tq), fi });
+      }
+    });
+    for (const ln of lines.values()) {
+      const E = ln.e;
+      for (let i = 0; i < E.length; i++) for (let j = i + 1; j < E.length; j++) {
+        const fa = this.faces[E[i].fi], fb = this.faces[E[j].fi];
+        const dot = fa.n[0] * fb.n[0] + fa.n[1] * fb.n[1] + fa.n[2] * fb.n[2];
+        if (dot > 0.9999 || dot < -0.9999) continue;
+        const t0 = Math.max(E[i].t0, E[j].t0), t1 = Math.min(E[i].t1, E[j].t1); if (t1 - t0 < 2e-4) continue;
+        const a = [ln.o[0] + ln.d[0] * t0, ln.o[1] + ln.d[1] * t0, ln.o[2] + ln.d[2] * t0], b = [ln.o[0] + ln.d[0] * t1, ln.o[1] + ln.d[1] * t1, ln.o[2] + ln.d[2] * t1];
+        // рёбра проёмов помечены 0.25: шейдер рисует контур окна и двери целиком, с откосами, снаружи и изнутри
+        // (Максим 27.10: «окну и двери не хватает линий»; в гостиной откосы окон ему понравились)
+        const s = [...a, ...b, ...fa.n, ...fb.n, fa.h || fb.h ? 0.25 : 0];
+        out.push(s); if (holeOut && (fa.h || fb.h)) holeOut.push(s);
+      }
+    }
+  }
+}
+// простая коробка
+function boxSolid(x0, x1, y0, y1, z0, z1) {
+  const S = new Solid();
+  S.quad([[x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]], [0, 0, 1]); S.quad([[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0]], [0, 0, -1]);
+  S.quad([[x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]], [0, 1, 0]); S.quad([[x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1]], [0, -1, 0]);
+  S.quad([[x0, y0, z0], [x0, y1, z0], [x0, y1, z1], [x0, y0, z1]], [-1, 0, 0]); S.quad([[x1, y0, z0], [x1, y1, z0], [x1, y1, z1], [x1, y0, z1]], [1, 0, 0]);
+  return S;
+}
+// объединение коробок в одно тело (кровля): сетка по всем границам, грани только снаружи объединения.
+// Щели до 2,5 см между кусками закрываются (границы ближе tol сводятся в одну), стыки и нахлёсты кусков линий не дают —
+// линия остаётся только на настоящем ребре (Максим 27.10: край кровли «должен просто ровно идти»)
+function snapAxis(vals, tol) {
+  const s = [...vals].sort((a, b) => a - b), map = new Map(); let grp = [s[0]];
+  const flush = () => { const m = grp.reduce((a, b) => a + b, 0) / grp.length; for (const v of grp) map.set(v, m); };
+  for (let i = 1; i < s.length; i++) { if (s[i] - s[i - 1] <= tol) grp.push(s[i]); else { flush(); grp = [s[i]]; } }
+  flush(); return map;
+}
+function unionSolid(boxes, tol = 0.025) {
+  const K = [['x0', 'x1'], ['y0', 'y1'], ['z0', 'z1']];
+  const snap = K.map(([a, b]) => snapAxis(boxes.flatMap((x) => [x[a], x[b]]), tol));
+  const B = boxes.map((x) => K.map(([a, b], k) => [snap[k].get(x[a]), snap[k].get(x[b])]));
+  const C = [0, 1, 2].map((k) => [...new Set(B.flatMap((x) => x[k]))].sort((a, b) => a - b));
+  const n = C.map((c) => c.length - 1), occ = new Uint8Array(n[0] * n[1] * n[2]);
+  const id = (i, j, k) => (i * n[1] + j) * n[2] + k;
+  const at = (i, j, k) => i >= 0 && j >= 0 && k >= 0 && i < n[0] && j < n[1] && k < n[2] && occ[id(i, j, k)] === 1;
+  for (let i = 0; i < n[0]; i++) for (let j = 0; j < n[1]; j++) for (let k = 0; k < n[2]; k++) {
+    const c = [(C[0][i] + C[0][i + 1]) / 2, (C[1][j] + C[1][j + 1]) / 2, (C[2][k] + C[2][k + 1]) / 2];
+    if (B.some((x) => x.every(([a, b], q) => c[q] > a && c[q] < b))) occ[id(i, j, k)] = 1;
+  }
+  const S = new Solid();
+  for (let i = 0; i < n[0]; i++) for (let j = 0; j < n[1]; j++) for (let k = 0; k < n[2]; k++) {
+    if (!at(i, j, k)) continue;
+    const x0 = C[0][i], x1 = C[0][i + 1], y0 = C[1][j], y1 = C[1][j + 1], z0 = C[2][k], z1 = C[2][k + 1];
+    if (!at(i, j, k + 1)) S.quad([[x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]], [0, 0, 1]);
+    if (!at(i, j, k - 1)) S.quad([[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0]], [0, 0, -1]);
+    if (!at(i, j + 1, k)) S.quad([[x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]], [0, 1, 0]);
+    if (!at(i, j - 1, k)) S.quad([[x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1]], [0, -1, 0]);
+    if (!at(i - 1, j, k)) S.quad([[x0, y0, z0], [x0, y1, z0], [x0, y1, z1], [x0, y0, z1]], [-1, 0, 0]);
+    if (!at(i + 1, j, k)) S.quad([[x1, y0, z0], [x1, y1, z0], [x1, y1, z1], [x1, y0, z1]], [1, 0, 0]);
+  }
+  return S;
+}
+// грани объединения разбиты сеткой, поэтому одно ребро приходит кусками: соседние куски одной линии сливаются в один отрезок
+function mergeSegs(segs) {
+  const groups = new Map();
+  for (const s of segs) {
+    let d = [s[3] - s[0], s[4] - s[1], s[5] - s[2]]; const L = Math.hypot(...d); if (L < 1e-6) continue; d = d.map((v) => v / L);
+    const lead = Math.abs(d[0]) > 1e-6 ? d[0] : Math.abs(d[1]) > 1e-6 ? d[1] : d[2]; if (lead < 0) d = d.map((v) => -v);
+    const ta = s[0] * d[0] + s[1] * d[1] + s[2] * d[2], tb = s[3] * d[0] + s[4] * d[1] + s[5] * d[2];
+    const o = [s[0] - d[0] * ta, s[1] - d[1] * ta, s[2] - d[2] * ta];
+    const nk = [s.slice(6, 9), s.slice(9, 12)].map((v) => v.map((x) => Math.round(x * 1000)).join(',')).sort().join('/');
+    const key = d.map((v) => Math.round(v * 1000)).join(',') + '|' + o.map((v) => Math.round(v * 2000)).join(',') + '|' + nk + '|' + s[12];
+    if (!groups.has(key)) groups.set(key, { d, o, e: [] });
+    groups.get(key).e.push({ t0: Math.min(ta, tb), t1: Math.max(ta, tb), s });
+  }
+  const out = [];
+  for (const { d, o, e } of groups.values()) {
+    e.sort((a, b) => a.t0 - b.t0);
+    let cur = { ...e[0] };
+    const emit = (c) => out.push([o[0] + d[0] * c.t0, o[1] + d[1] * c.t0, o[2] + d[2] * c.t0, o[0] + d[0] * c.t1, o[1] + d[1] * c.t1, o[2] + d[2] * c.t1, ...c.s.slice(6)]);
+    for (let i = 1; i < e.length; i++) { if (e[i].t0 <= cur.t1 + 1e-4) cur.t1 = Math.max(cur.t1, e[i].t1); else { emit(cur); cur = { ...e[i] }; } }
+    emit(cur);
+  }
+  return out;
+}
+// стена с проёмами насквозь. thin: 'z' стена вдоль x, 'x' стена вдоль z. wo: координата наружной грани по тонкой оси.
+// holes: {u0,u1,v0,v1 снаружи; U0,U1,V0,V1 изнутри; ns выемка в начале, ne выемка в конце}
+// cover: {ns|ne: [v0, v1]} — торец закрыт соседней панелью на этой высоте (стык в одной плоскости): его не строим, линии стыка нет
+function wallSolid(b, thin, wo, holes, cover = {}) {
+  const S = new Solid();
+  const u0 = thin === 'z' ? b.x0 : b.z0, u1 = thin === 'z' ? b.x1 : b.z1, v0 = b.y0, v1 = b.y1;
+  const wA = thin === 'z' ? b.z0 : b.x0, wB = thin === 'z' ? b.z1 : b.x1, wi = Math.abs(wo - wA) < 1e-6 ? wB : wA;
+  const P = (u, v, w) => (thin === 'z' ? [u, v, w] : [w, v, u]);
+  const U = thin === 'z' ? [1, 0, 0] : [0, 0, 1], Wd = thin === 'z' ? [0, 0, 1] : [1, 0, 0];
+  const sgn = (w) => (w > (wo + wi) / 2 ? 1 : -1);
+  for (const [w, rects] of [[wo, holes.map((h) => [h.u0, h.u1, h.v0, h.v1])], [wi, holes.map((h) => [h.U0, h.U1, h.V0, h.V1])]]) {
+    const n = Wd.map((v) => v * sgn(w));
+    for (const [a0, a1, c0, c1] of cells(u0, u1, v0, v1, rects)) S.quad([P(a0, c0, w), P(a1, c0, w), P(a1, c1, w), P(a0, c1, w)], n);
+  }
+  const wl = Math.min(wo, wi), wh = Math.max(wo, wi);
+  S.quad([P(u0, v1, wl), P(u1, v1, wl), P(u1, v1, wh), P(u0, v1, wh)], [0, 1, 0]);
+  S.quad([P(u0, v0, wl), P(u1, v0, wl), P(u1, v0, wh), P(u0, v0, wh)], [0, -1, 0]);
+  for (const [u, nsgn, key] of [[u0, -1, 'ns'], [u1, 1, 'ne']]) {
+    const rects = holes.filter((h) => h[key]).map((h) => [h.v0, h.v1, wl - 1, wh + 1]);
+    if (cover[key]) rects.push([cover[key][0], cover[key][1], wl - 1, wh + 1]);
+    for (const [c0, c1, w0, w1] of cells(v0, v1, wl, wh, rects)) S.quad([P(u, c0, w0), P(u, c1, w0), P(u, c1, w1), P(u, c0, w1)], U.map((v) => v * nsgn));
+  }
+  for (const h of holes) {
+    if (!h.ns) S.quad([P(h.u0, h.v0, wo), P(h.u0, h.v1, wo), P(h.U0, h.V1, wi), P(h.U0, h.V0, wi)], U, true);
+    if (!h.ne) S.quad([P(h.u1, h.v0, wo), P(h.u1, h.v1, wo), P(h.U1, h.V1, wi), P(h.U1, h.V0, wi)], U.map((v) => -v), true);
+    S.quad([P(h.u0, h.v1, wo), P(h.u1, h.v1, wo), P(h.U1, h.V1, wi), P(h.U0, h.V1, wi)], [0, -1, 0], true);
+    S.quad([P(h.u0, h.v0, wo), P(h.u1, h.v0, wo), P(h.U1, h.V0, wi), P(h.U0, h.V0, wi)], [0, 1, 0], true);
+  }
+  return S;
+}
+// json → оси теста
+const cv = (b) => ({ x0: b[0] + OFF_X, x1: b[1] + OFF_X, y0: b[4], y1: b[5], z0: -b[3] - OFF_Z, z1: -b[2] - OFF_Z });
+function wallBox(ref, b) {
+  const bx = cv(b); const thin = b[1] - b[0] < 0.2 ? 'x' : 'z';
+  const inw = INWARD[ref]; let wo, dir = 1;
+  if (inw) {
+    if (thin === 'x') { if (inw[0] > 0) { wo = bx.x0; bx.x1 = bx.x0 + PANEL; } else { wo = bx.x1; bx.x0 = bx.x1 - PANEL; dir = -1; } }
+    else { const dz = -inw[1]; if (dz > 0) { wo = bx.z0; bx.z1 = bx.z0 + PANEL; } else { wo = bx.z1; bx.z0 = bx.z1 - PANEL; dir = -1; } }
+  } else wo = thin === 'x' ? bx.x0 : bx.z0;
+  if (Math.abs(bx.y1 - 2.87) < 0.005) bx.y1 = 2.8;   // стены низкой части встают под плиту (её низ теперь 2,8): линия стены и свеса чёткая, как на фото
+  return { bx, thin, wo, dir };
+}
+// стыки наружных панелей в одной плоскости (щель 2 см): на фото стена сплошная. Щель закрывается пополам, торцы на стыке
+// не строятся, короткая панель встаёт в плоскость длинной (у ExL-34 и ExL-38 наружные грани расходились на 2 см)
+const WJ = {};
+{ const W = ELS.filter(([k, , b]) => k === 'w' && b[4] < 0).map(([, ref, b]) => ({ ref, ...wallBox(ref, b) }));
+  const U = (w, e) => (w.thin === 'z' ? w.bx[e ? 'x1' : 'x0'] : w.bx[e ? 'z1' : 'z0']);
+  for (const A of W) for (const B of W) {
+    if (A === B || A.thin !== B.thin || Math.abs(A.wo - B.wo) > 0.025) continue;
+    const gap = U(B, 0) - U(A, 1); if (gap < -0.001 || gap > 0.03) continue;
+    const u = (U(A, 1) + U(B, 0)) / 2, v = [Math.max(A.bx.y0, B.bx.y0), Math.min(A.bx.y1, B.bx.y1)];
+    (WJ[A.ref] ||= {}).ne = { u, v }; (WJ[B.ref] ||= {}).ns = { u, v };
+    const [S, L] = U(A, 1) - U(A, 0) < U(B, 1) - U(B, 0) ? [A, B] : [B, A]; WJ[S.ref].wo = L.wo;
+  } }
+function wallFromJson(ref, b, hl) {
+  const w = wallBox(ref, b), { bx, thin, dir } = w; let wo = w.wo;
+  const J = WJ[ref] || {}, cover = {};
+  if (J.wo != null) { wo = J.wo; const [a, c] = thin === 'x' ? ['x0', 'x1'] : ['z0', 'z1']; if (dir > 0) { bx[a] = wo; bx[c] = wo + PANEL; } else { bx[c] = wo; bx[a] = wo - PANEL; } }
+  if (J.ns) { bx[thin === 'z' ? 'x0' : 'z0'] = J.ns.u; cover.ns = J.ns.v; }
+  if (J.ne) { bx[thin === 'z' ? 'x1' : 'z1'] = J.ne.u; cover.ne = J.ne.v; }
+  const bu0 = thin === 'z' ? bx.x0 : bx.z0, bu1 = thin === 'z' ? bx.x1 : bx.z1;
+  // проёмы: по u вдоль стены, по v высота; одинаковые с двух граней слоя сводятся в один
+  const raw = (hl || []).concat(NOTCH[ref] || []).map((h) => (thin === 'z' ? { u0: h[0] + OFF_X, u1: h[1] + OFF_X, v0: h[4], v1: h[5] } : { u0: -h[3] - OFF_Z, u1: -h[2] - OFF_Z, v0: h[4], v1: h[5] }));
+  const holes = [];
+  for (const h of raw) {
+    const m = holes.find((g) => h.u0 < g.u1 - 0.02 && h.u1 > g.u0 + 0.02);
+    if (m) { m.u0 = Math.min(m.u0, h.u0); m.u1 = Math.max(m.u1, h.u1); m.v0 = Math.min(m.v0, h.v0); m.v1 = Math.max(m.v1, h.v1); } else holes.push(Object.assign({}, h));
+  }
+  for (const h of holes) {
+    h.ns = h.u0 <= bu0 + 0.012; h.ne = h.u1 >= bu1 - 0.012;
+    if (h.ns) h.u0 = bu0; if (h.ne) h.u1 = bu1;
+    const notch = h.ns || h.ne;
+    const exp = notch || WIN3D[ref] ? 0 : EXP;   // у проёмов фасада откос прямой: в нём стоит рама
+    h.U0 = h.u0 - exp; h.U1 = h.u1 + exp; h.V0 = h.v0; h.V1 = h.v1 + exp;
+  }
+  return wallSolid(bx, thin, wo, holes, cover);
+}
+
+// Группы: дом (стены, перегородки, полы), кровля (плиты, парапеты, полосы), фундамент, обстановка
+const G = { house: { tris: [], segs: [] }, roof: { tris: [], segs: [] }, found: { tris: [], segs: [] }, furn: { tris: [], segs: [] }, parts: { tris: [], segs: [] } };
+const ACC = { roof: [], win: [], floor: [] };
+// фасад с другой стороны (A2, Максим 27.10): северная стена глухая с двумя небольшими окнами не в пол, на западной дверь.
+// Эти стены видны только в A2; спереди, внутри и на плане сверху их проёмов не видно.
+// Проёмы как на кадре фасада fa3 (Максим 27.10: «окна и двери не соответствуют дому, сделай их более 3D-шными»), размеры сняты
+// с кадра через камеру A2. Оси теста: u вдоль стены, v высота; mull — импосты [u0, u1], sill — отлив под окном,
+// inset — на сколько рама утоплена от лица стены (на кадре у окон глубокий откос, дверь почти вровень со стеной)
+const WIN3D = {
+  'ExL-31': { u: [0.86, 2.86], v: [1.2, 1.97], mull: [[1.56, 1.66]], sill: true, inset: 0.15 },
+  'ExL-37': { u: [6.12, 7.92], v: [1.2, 1.97], mull: [[6.84, 6.94]], sill: true, inset: 0.15 },
+  'ExL-39': { u: [-9.14, -7.0], v: [0, 2.7], mull: [[-8.43, -8.33], [-7.67, -7.53]], inset: 0.04 },   // двустворчатая дверь и узкая стеклянная вставка
+};
+// проёмы в осях json: по грани на каждую сторону слоя, как в IFC
+const HL_A2 = { 'ExL-30': [] };
+for (const [ref, o] of Object.entries(WIN3D)) {
+  const b = ELS.find((e) => e[1] === ref)[2];
+  HL_A2[ref] = b[1] - b[0] < 0.2 ? [b[0], b[1]].map((x) => [x, x, -o.u[1] - OFF_Z, -o.u[0] - OFF_Z, o.v[0], o.v[1]])
+    : [b[2], b[3]].map((y) => [o.u[0] - OFF_X, o.u[1] - OFF_X, y, y, o.v[0], o.v[1]]);
+}
+// низкая плита (F-1-2) в IFC заходит под высокую на 0,9 м внутрь гостиной (до x 9,44): в кадре гостиной потолок ровный,
+// а край плиты давал лишние линии в левом верхнем углу. Внутри высокой части (между её северной и южной стенами) плита
+// обрезана по левой стене гостиной; снаружи (свесы на севере и юге) она прежняя
+// На юге (у входа) плита в IFC торчит на 0,4 м за торец парапета (до x 9,44): в чертеже это кривой «козырёк», на фото его нет —
+// обрезана по парапету InL-140 (x 9,03)
+// Низ плиты опущен до низа парапетов (2,8): свес снизу ровный, как на фото, без второй линии в 10 см от края
+const SPLIT = { 'Concrete_F-1-2': (c) => [{ ...c, y0: 2.8, z1: -10.16 }, { ...c, y0: 2.8, z0: -10.16, z1: -1.15, x1: 8.4 }, { ...c, y0: 2.8, z0: -1.15, x1: 9.03 }] };
+// у высокой кровли то же только на свесах снаружи стен (юг, восток, север): потолок гостиной остаётся на 3,4
+const SOFFIT = [{ x0: 5.77, x1: 15.16, y0: 3.3, y1: 3.4, z0: -1.15, z1: -0.34 }, { x0: 5.77, x1: 15.16, y0: 3.3, y1: 3.4, z0: -10.97, z1: -10.16 },
+  { x0: 14.35, x1: 15.16, y0: 3.3, y1: 3.4, z0: -10.16, z1: -1.15 }];
+// угловой кусок парапета высокой кровли в IFC ниже остальных (до 3,62): на фото край кровли сплошной, по верху парапета
+const ROOF_FIX = { 'Concrete_НС-101-2': { y1: 4.2 } };
+const ROOF_BOXES = [...SOFFIT], ROOF_HIGH = [];
+for (const [kind, ref, b, hl0] of ELS) {
+  const hl = HL_A2[ref] || hl0;
+  let S, g;
+  const holeSegs = [];
+  if (SPLIT[ref]) { ROOF_BOXES.push(...SPLIT[ref](cv(b))); continue; }
+  if (kind === 'w' && b[4] < 0) { S = wallFromJson(ref, b, hl); g = G.house; }
+  else if (kind === 'i' || kind === 'f') { const c = cv(b); S = boxSolid(c.x0, c.x1, c.y0, c.y1, c.z0, c.z1); g = kind === 'i' ? G.house : G.found; }
+  else { const c = Object.assign(cv(b), ROOF_FIX[ref]); ROOF_BOXES.push(c); if (kind !== 's' && b[4] >= 3.29) ROOF_HIGH.push(c); continue; }
+  S.tris(g.tris);
+  S.lines(g.segs, holeSegs);
+  if (ref === 'ExL-43' || ref === 'ExL-38') for (const s of holeSegs) if (s[1] > 0.85 && s[1] < 2.2 && s[4] > 0.85 && s[4] < 2.2) ACC.win.push(s);   // только угловое окно (0,9…2,155 м)
+}
+// кровля (плиты, парапеты, куски углов) — одно тело: край идёт ровно, без стыков панелей и щелей.
+// Акцент края высокой кровли — её парапеты отдельным телом: край снаружи виден по ним, плита внутри них спрятана
+// Вертикальные рёбра тела кровли помечены как рёбра проёмов (0.25): шейдер прячет вертикальные складки, а угол свеса
+// у цельного тела — складка двух видимых граней; у кусков он раньше проходил стыком
+const inkVert = (segs) => segs.map((s) => (Math.abs(s[4] - s[1]) > 0.9 * Math.hypot(s[3] - s[0], s[4] - s[1], s[5] - s[2]) ? [...s.slice(0, 12), 0.25] : s));
+{ const S = unionSolid(ROOF_BOXES), t = []; S.tris(G.roof.tris); S.lines(t); G.roof.segs.push(...inkVert(mergeSegs(t)));
+  const h = []; unionSolid(ROOF_HIGH).lines(h); ACC.roof.push(...inkVert(mergeSegs(h))); }
+// начинка проёмов фасада: рама в глубине проёма (профиль 6 × 7 см), импосты, стекло посередине рамы
+// (комнаты за ним не видно, как на кадре), отлив под окном. Одно тело на проём, без стыков; рёбра чернилами, как у проёмов
+for (const [ref, o] of Object.entries(WIN3D)) {
+  const w = wallBox(ref, ELS.find((e) => e[1] === ref)[2]), wo = WJ[ref]?.wo ?? w.wo, d = w.dir;
+  const [u0, u1] = o.u, [v0, v1] = o.v, fw = 0.06, a = wo + d * o.inset, c = a + d * 0.07, g = a + d * 0.035;
+  const box = (uA, uB, vA, vB, wA, wB) => { const w0 = Math.min(wA, wB), w1 = Math.max(wA, wB);
+    return w.thin === 'z' ? { x0: uA, x1: uB, y0: vA, y1: vB, z0: w0, z1: w1 } : { x0: w0, x1: w1, y0: vA, y1: vB, z0: uA, z1: uB }; };
+  const B = [box(u0, u1, v1 - fw, v1, a, c), box(u0, u1, v0, v0 + fw, a, c), box(u0, u0 + fw, v0, v1, a, c), box(u1 - fw, u1, v0, v1, a, c),
+    ...o.mull.map(([m0, m1]) => box(m0, m1, v0, v1, a, c)), box(u0, u1, v0, v1, g - 0.005, g + 0.005)];
+  if (o.sill) B.push(box(u0 - 0.05, u1 + 0.05, v0 - 0.04, v0, wo - d * 0.06, a));
+  const S = unionSolid(B, 0.004), t = []; S.tris(G.house.tris); S.lines(t);
+  G.house.segs.push(...mergeSegs(t).map((s) => [...s.slice(0, 12), 0.25]));
+}
+// перегородки отдельно: в тёплом контуре (внутри дома, A3) их ещё нет, видны только бетонные ВС.
+// Левая стена гостиной (x 8,4…8,52) остаётся всегда: в кадре гостиной она есть, без неё за углом видно коридор
+for (const [x0, x1, z0, z1, h] of PARTS) { const g = x0 >= 8.4 ? G.house : G.parts; const S = boxSolid(x0, x1, 0, h, z0, z1); S.tris(g.tris); S.lines(g.segs); }
+for (const [x0, x1, y0, y1, z0, z1] of FLOORS) { const S = boxSolid(x0, x1, y0, y1, z0, z1); S.tris(G.house.tris); S.lines(G.house.segs); }
+// углы гостиной: правая и задняя стены — разные панели, угол между ними не ребро ни одной из них, линия сама не рисуется.
+// Задаются явно чернилами чуть перед гранями (иначе прячутся за ними): правый угол, низ правой стены (k = 2 — линия всегда).
+// Между левой стеной гостиной (до x 8,52) и задней стеной (с x 8,67) в модели щель 15 см: заполнена, угол как на фото
+{ const R = { x1: 13.975, z0: -9.805, z1: -1.5, h: 3.37, f: 0.012 }, k = 2, n = [0, 1, 0, 0, 1, 0];
+  G.house.segs.push([R.x1, R.f, R.z0, R.x1, R.h, R.z0, ...n, k], [R.x1, R.f, R.z0, R.x1, R.f, R.z1, ...n, k]);
+  // ближний угол торца левой стены (x 8,52, z −5,27): обе грани видны, складку шейдер прячет, а на фото угол есть (Максим 27.10)
+  G.house.segs.push([8.525, R.f, -5.265, 8.525, 3.395, -5.265, ...n, k]);
+  const S = boxSolid(8.52, 8.67, -0.15, 3.37, -10.16, -9.81); S.tris(G.house.tris); S.lines(G.house.segs);
+  // торец задней стены (x 8,67) теперь закрыт вставкой: его вертикальная линия на внутренней грани лишняя
+  G.house.segs = G.house.segs.filter((s) => !(Math.abs(s[0] - 8.67) < 0.01 && Math.abs(s[3] - 8.67) < 0.01 && Math.abs(s[2] + 9.81) < 0.01 && Math.abs(s[5] + 9.81) < 0.01)); }
+for (const [x0, x1, y0, y1, z0, z1] of FURN) { const S = boxSolid(x0, x1, y0, y1, z0, z1); S.tris(G.furn.tris); S.lines(G.furn.segs); }
+{ const f = FLOORS[0], y = 0.012, k = 2; ACC.floor.push([f[0], y, f[4], f[1], y, f[4], 0, 1, 0, 0, 1, 0, k], [f[1], y, f[4], f[1], y, f[5], 0, 1, 0, 0, 1, 0, k], [f[1], y, f[5], f[0], y, f[5], 0, 1, 0, 0, 1, 0, k], [f[0], y, f[5], f[0], y, f[4], 0, 1, 0, 0, 1, 0, k]); }
+
+// ------------------------------------------------------------------
+// Рендер, камера, линии
+// ------------------------------------------------------------------
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', preserveDrawingBuffer: FORCE_P != null });
+let DPR = Math.min(window.devicePixelRatio || 1, MOB ? 1.5 : 2);
+renderer.setPixelRatio(DPR);
+renderer.toneMapping = THREE.NoToneMapping;
+renderer.setClearColor(COL.paper, 1);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 2000);
+const U = { uRes: { value: new THREE.Vector2(1, 1) } };
+const LINE_VS = `
+attribute vec3 aA; attribute vec3 aB; attribute vec3 aN1; attribute vec3 aN2; attribute float aK;
+uniform vec2 uRes; uniform float uWInk; uniform float uWDim; uniform float uWAcc; uniform float uAccent;
+varying float vKind; varying float vSide; varying float vWid;
+void main() {
+  vec4 a = modelViewMatrix * vec4(aA, 1.0);
+  vec4 b = modelViewMatrix * vec4(aB, 1.0);
+  float kind = 0.0;
+  if (aK < 0.5) {
+    vec3 m = 0.5 * (a.xyz + b.xyz);
+    float f1 = dot(normalize(normalMatrix * aN1), -m);
+    float f2 = dot(normalize(normalMatrix * aN2), -m);
+    if (aK > 0.1) { kind = f1 > 0.0 || f2 > 0.0 ? 2.0 : 0.0; }   // ребро проёма: контур окна и двери целиком, чернилами
+    else if (f1 > 0.0 && f2 > 0.0) {
+      vec3 dw = normalize(mat3(modelMatrix) * (aB - aA));
+      kind = abs(dw.y) > 0.9 ? 0.0 : 1.0;
+    } else if (f1 > 0.0 || f2 > 0.0) { kind = 2.0; }
+  } else if (aK < 1.5) { kind = 1.0; } else { kind = 2.0; }
+  vKind = kind;
+  if (kind < 0.5) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); vSide = 0.0; vWid = 1.0; return; }
+  float nearEst = -0.5 * projectionMatrix[3][2] / projectionMatrix[2][2];
+  if (a.z < 0.0 && b.z >= 0.0) { b.xyz = mix(a.xyz, b.xyz, (nearEst - a.z) / (b.z - a.z)); }
+  else if (b.z < 0.0 && a.z >= 0.0) { a.xyz = mix(b.xyz, a.xyz, (nearEst - b.z) / (a.z - b.z)); }
+  vec4 ca = projectionMatrix * a; vec4 cb = projectionMatrix * b;
+  vec2 sa = ca.xy / ca.w * uRes * 0.5; vec2 sb = cb.xy / cb.w * uRes * 0.5;
+  vec2 d = sb - sa; float len = length(d); d = len > 1e-4 ? d / len : vec2(1.0, 0.0);
+  vec2 nrm = vec2(-d.y, d.x);
+  float w = (kind > 1.5 ? mix(uWInk, uWAcc, uAccent) : mix(uWDim, uWAcc, uAccent)) + 1.0;
+  vec4 c = position.y < 0.5 ? ca : cb;
+  vec2 off = nrm * position.x * 0.5 * w + d * (position.y < 0.5 ? -0.5 : 0.5) * w;
+  c.xy += off / (uRes * 0.5) * c.w;
+  gl_Position = c;
+  vSide = position.x; vWid = w;
+}`;
+const LINE_FS = `
+uniform vec3 uInk; uniform vec3 uDim; uniform vec3 uAcc; uniform float uAccent; uniform float uAlpha;
+varying float vKind; varying float vSide; varying float vWid;
+void main() {
+  float px = abs(vSide) * vWid * 0.5;
+  float core = vWid * 0.5 - 0.5;
+  float aa = 1.0 - smoothstep(core - 0.6, core + 0.5, px);
+  vec3 col = vKind > 1.5 ? mix(uInk, uAcc, uAccent) : mix(uDim, uAcc, uAccent);
+  float a = aa * uAlpha;
+  if (a < 0.004) discard;
+  gl_FragColor = vec4(col, a);
+}`;
+const lineQuad = new THREE.InstancedBufferGeometry();
+lineQuad.setAttribute('position', new THREE.Float32BufferAttribute([-1, 0, 0, 1, 0, 0, -1, 1, 0, 1, 1, 0], 3));
+lineQuad.setIndex([0, 1, 2, 2, 1, 3]);
+const lineMats = [];
+function lineMaterial(o = {}) {
+  const w = [o.wInk || 1.1, o.wDim || 0.75, o.wAcc || 1.9];
+  const m = new THREE.ShaderMaterial({
+    uniforms: { uRes: U.uRes, uWInk: { value: w[0] * DPR }, uWDim: { value: w[1] * DPR }, uWAcc: { value: w[2] * DPR },
+      uInk: { value: sv(COL.ink) }, uDim: { value: sv(COL.dim) }, uAcc: { value: sv(COL.acc) }, uAccent: { value: o.accent || 0 }, uAlpha: { value: 1 } },
+    vertexShader: LINE_VS, fragmentShader: LINE_FS, transparent: true, depthWrite: false, depthTest: true, side: THREE.DoubleSide,
+  });
+  m.userData.w = w; lineMats.push(m); return m;
+}
+function makeLines(segs, o = {}) {
+  const n = segs.length, Aa = new Float32Array(n * 3), Bb = new Float32Array(n * 3), N1 = new Float32Array(n * 3), N2 = new Float32Array(n * 3), K = new Float32Array(n);
+  segs.forEach((s, i) => { Aa.set(s.slice(0, 3), i * 3); Bb.set(s.slice(3, 6), i * 3); N1.set(s.slice(6, 9), i * 3); N2.set(s.slice(9, 12), i * 3); K[i] = s[12]; });
+  const g = new THREE.InstancedBufferGeometry();
+  g.index = lineQuad.index; g.setAttribute('position', lineQuad.attributes.position);
+  g.setAttribute('aA', new THREE.InstancedBufferAttribute(Aa, 3)); g.setAttribute('aB', new THREE.InstancedBufferAttribute(Bb, 3));
+  g.setAttribute('aN1', new THREE.InstancedBufferAttribute(N1, 3)); g.setAttribute('aN2', new THREE.InstancedBufferAttribute(N2, 3));
+  g.setAttribute('aK', new THREE.InstancedBufferAttribute(K, 1));
+  g.instanceCount = n;
+  const mesh = new THREE.Mesh(g, lineMaterial(o)); mesh.frustumCulled = false; mesh.renderOrder = o.order || 3;
+  return mesh;
+}
+const paperMat = new THREE.MeshBasicMaterial({ color: COL.paper, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1, side: THREE.DoubleSide });
+const groups = {};
+for (const k of Object.keys(G)) {
+  if (k === 'found') continue;   // фундамент под землёй: в кадрах его нет, сверху он шире плана
+  const grp = new THREE.Group(); scene.add(grp);
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(G[k].tris, 3));
+  const solid = new THREE.Mesh(geo, paperMat); solid.frustumCulled = false; grp.add(solid);
+  const lines = makeLines(G[k].segs); grp.add(lines);
+  groups[k] = { grp, solid, lines, alpha: 1 };
+}
+const accents = {};
+for (const k of Object.keys(ACC)) { const m = makeLines(ACC[k], { accent: 1, order: 4 }); m.material.uniforms.uAlpha.value = 0; m.visible = false; scene.add(m); accents[k] = m; }
+// земля только для карты глубины (в кадре её нет)
+const bakeGround = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000).rotateX(-Math.PI / 2), paperMat); bakeGround.position.y = -0.17; bakeGround.visible = false; scene.add(bakeGround);
+
+// ------------------------------------------------------------------
+// Точки остановки: камера, кадр (угол, пропорции, главная точка), как кадр ложится на экран
+// ------------------------------------------------------------------
+const D_TOP = 400;
+const PLAN = { w: 1819, h: 1287, pxm: 57.7, x0: 249, y0: 201 };            // чертёж: пикселей на метр, левая наружная грань, верхняя наружная грань
+const plan = { cx: -0.35 + (PLAN.w / 2 - PLAN.x0) / PLAN.pxm, cz: -14.65 + (PLAN.h / 2 - PLAN.y0) / PLAN.pxm, hh: PLAN.h / 2 / PLAN.pxm };
+const M_POS = V3(12.1, 1.15, -4.0), M_LOOK = V3(12.1, 1.15, -9.81);
+// камера гостиной после влёта в угловое окно (Максим 27.10): тот же ракурс на большое окно, но сразу за южной стеной, по оси окна,
+// угол шире (96° по горизонтали в кадре 16:9) — в кадре около 85 % комнаты
+const M2_POS = V3(11.65, 1.35, -1.62), M2_LOOK = V3(11.65, 1.3, -9.81), M2_FV = 2 * Math.atan(Math.tan(rad(48)) / (16 / 9));
+// A1 и A2 на одной точке камеры: «кадр 5» MIR, объектив 50 мм на кадре 36 мм, 2000 × 1333, сдвиг кадра 0,024 вправо и 0,078 вверх
+// (final/camera.json). A2 это наезд с той же точки: угол сужен в ZOOM раз (50 мм → 32 мм), кадр тот же, вырезан вокруг точки ZC
+const ZOOM = 1.55, ZC = [0.5, 0.58];
+const FV5 = 2 * Math.atan(666.5 / 2777.8), PP5 = [0.476, 0.617];
+// A2 (Максим 27.10): камера не наезжает, а облетает дом на другую сторону, там проявляется новый фасад (img/frames-facade.js).
+// Варианты ?f=1 … 3: ракурс и фасад; dir — куда облетать (−1 через восток, +1 через запад), co — где выноски на экране
+const FACADES = {
+  // 3 (выбран 27.10, варианты 1–2 сняты): поворот через запад, камера ближе к углу дома, дом в кадре в 1,55 раза крупнее
+  // (как наезд в исходном аниматике). Фасад: обожжённое дерево, бетонный край кровли, дубовый потолок свеса
+  3: { name: 'сзади слева, вечер', pos: [-11.0, 1.4, -29.2], look: [3.2, 1.75, -7.2], near: 10, wall: 45, dir: 1, tex: 'fa3',
+    co: [[63, 16], [73, 70], [6, 38]] },
+};
+const FC = FACADES[qs.get('f')] ? qs.get('f') : '3', FCD = FACADES[FC];
+const HAS_FA = !!(window.FRAMES || {})[FCD.tex];
+if (qs.has('f')) document.title = FC + ' · ' + FCD.name + ' · ' + document.title;
+document.querySelectorAll('#co .co').forEach((el, i) => { el.style.left = FCD.co[i][0] + '%'; el.style.top = FCD.co[i][1] + '%'; });
+const S = {
+  a1: { pos: V3(7.01, 1.2, 29.8), look: V3(7.01, 1.2, -10), up: V3(0, 1, 0), fv: FV5, FA: 2000 / 1333, pp: PP5, fit: 'cover', near: 24, wall: 60,
+    tex: (window.FRAMES || {}).a2d ? ['a2', 'a2c', 'a2m', 'a2d'] : ['a2'] },   // img/frames-clean.js: a2c кадр без дерева на доме, a2m маска дома, a2d карта фронта от дома
+  a2: HAS_FA
+    ? { pos: V3(...FCD.pos), look: V3(...FCD.look), up: V3(0, 1, 0), fv: rad(27), FA: 1.5, pp: [0.5, 0.5], fit: 'cover', near: FCD.near, wall: FCD.wall, tex: [FCD.tex] }
+    : { pos: V3(7.01, 1.2, 29.8), look: V3(7.01, 1.2, -10), up: V3(0, 1, 0), fv: 2 * Math.atan(Math.tan(FV5 / 2) / ZOOM), FA: 2000 / 1333,
+      pp: [0.5 + ZOOM * (PP5[0] - ZC[0]), 0.5 + ZOOM * (PP5[1] - ZC[1])], fit: 'cover', near: 24, wall: 60, tex: ['a2'], zoom: ZOOM, zc: ZC },   // без кадров фасада: прежний наезд
+  // A3: первая ступень — тёплый контур (a3w: голые панели, пол и потолок, окно, без мебели и перегородок, img/frames-interior.js), потом отделка
+  a3: HAS_FA
+    ? { pos: M2_POS, look: M2_LOOK, up: V3(0, 1, 0), fv: M2_FV, FA: 16 / 9, pp: [0.5, 0.5], fit: 'cover', near: 2.0, wall: 10.5,
+      tex: [A3W || 'a3c', 'a3f'] }
+    : { pos: M_POS, look: M_LOOK, up: V3(0, 1, 0), fv: 2 * Math.atan(Math.tan(rad(42)) / (16 / 9)), FA: 16 / 9, pp: [0.5, 0.56], fit: 'cover', near: 3.3, wall: 9.0, tex: ['a3c', 'a3f'] },
+  a4: { pos: V3(plan.cx, D_TOP, plan.cz), look: V3(plan.cx, 0, plan.cz), up: V3(0, 0, -1), fv: 2 * Math.atan(plan.hh / D_TOP), FA: PLAN.w / PLAN.h, pp: [0.5, 0.5], fit: 'rect', fw: PLAN.w, fh: PLAN.h, near: D_TOP - 7, wall: D_TOP + 1, tex: ['a4'] },
+};
+let W = 1, H = 1;
+function fitStop(s) {
+  const asp = W / H;
+  if (s.fit === 'cover') { s.kx = asp < s.FA ? asp / s.FA : 1; s.ky = asp < s.FA ? 1 : s.FA / asp; s.cx = 0.5; s.cy = 0.5; }
+  else {
+    const rx0 = MOB ? 0.04 * W : 0.30 * W, rx1 = MOB ? 0.96 * W : 0.94 * W, ry0 = MOB ? 0.37 * H : 0.13 * H, ry1 = MOB ? 0.66 * H : 0.74 * H;
+    const sc = Math.min((rx1 - rx0) / s.fw, (ry1 - ry0) / s.fh);
+    s.kx = W / (s.fw * sc); s.ky = H / (s.fh * sc); s.cx = (rx0 + rx1) / 2 / W; s.cy = (ry0 + ry1) / 2 / H;
+  }
+  s.fov = deg(2 * Math.atan(Math.tan(s.fv / 2) * s.ky));
+  s.sx = s.cx + (s.pp[0] - 0.5) / s.kx; s.sy = s.cy + (s.pp[1] - 0.5) / s.ky;
+}
+// путь A2 → M: от «кадра 5» вправо к угловому окну, сквозь него в гостиную
+const path2 = new THREE.CatmullRomCurve3([(HAS_FA ? V3(10.3, 1.4, 21.0) : S.a2.pos).clone(), V3(10.3, 1.4, 15.0), V3(12.55, 1.55, 3.0), V3(12.6, 1.5, -1.3), M_POS.clone()], false, 'centripetal');
+const look2 = new THREE.CatmullRomCurve3([(HAS_FA ? V3(7.01, 1.3, -10) : S.a2.look).clone(), V3(11.4, 1.35, -9.0), V3(12.6, 1.5, -9.6), V3(12.4, 1.3, -9.8), M_LOOK.clone()], false, 'centripetal');
+// облёт вокруг дома: угол, радиус и высота камеры вокруг середины дома, точка взгляда своя
+const ORB_C = V3(7.0, 0, -7.2);
+const polar = (p) => ({ a: Math.atan2(p.z - ORB_C.z, p.x - ORB_C.x), r: Math.hypot(p.x - ORB_C.x, p.z - ORB_C.z), y: p.y });
+// путь A2 → гостиная (Максим 27.10): с фасада облёт обратно через запад к фронту, сужаясь по спирали, плавный поворот налево,
+// подлёт с юга к угловому окну А (южная грань x 10,95…14,25, высота 0,9…2,155), сквозь него и остановка сразу за стеной.
+// Один путь, один изинг на весь ход; взгляд сначала на дом, на подлёте уходит на большое окно гостиной
+const WIN_O = V3(11.64, 1.6, 7.07);   // конец спирали: юг, 15 м от середины дома, движение на восток с поворотом к окну
+const pathW = (() => {
+  const a = polar(S.a2.pos), b = polar(WIN_O); let d = b.a - a.a; while (d > 0) d -= 2 * Math.PI;   // угол убывает: через запад и юг
+  const pts = [];
+  for (let i = 0; i < 9; i++) { const u = i / 9, r = lerp(a.r, b.r, u * u * (3 - 2 * u)), an = a.a + d * u;
+    pts.push(V3(ORB_C.x + r * Math.cos(an), lerp(S.a2.pos.y, WIN_O.y, u), ORB_C.z + r * Math.sin(an))); }
+  pts.push(WIN_O.clone(), V3(12.9, 1.55, 3.4), V3(12.35, 1.45, -0.3), V3(12.0, 1.4, -1.25), M2_POS.clone());
+  return new THREE.CatmullRomCurve3(pts, false, 'centripetal');
+})();
+const K_WIN = (() => { let best = 0, bd = 1e9; for (let i = 0; i <= 400; i++) { const d = pathW.getPointAt(i / 400).distanceTo(WIN_O); if (d < bd) { bd = d; best = i / 400; } } return best; })();
+const HOUSE_C = V3(7.0, 1.6, -7.2);
+function windowPose(k) {   // k 0…1 по длине пути
+  cam.pos.copy(pathW.getPointAt(k));
+  cam.look.lerpVectors(S.a2.look, HOUSE_C, sstep(seg(k, 0, 0.18)));
+  cam.look.lerp(M2_LOOK, sstep(seg(k, K_WIN - 0.12, 0.97)));
+  cam.up.set(0, 1, 0);
+  // угол: на облёте шире кадра фасада (дом ближе, чем на первом облёте, и должен входить целиком), на подлёте к окну — угол гостиной
+  const s = sstep(seg(k, K_WIN - 0.08, 1));
+  cam.fov = lerp(lerp(S.a2.fov, ORB_FOV, sstep(seg(k, 0, 0.3))), S.a3.fov, s); cam.sx = lerp(S.a2.sx, S.a3.sx, s); cam.sy = lerp(S.a2.sy, S.a3.sy, s);
+}
+const ORB_FOV = 40;
+function orbit(pa, pb, dir, u, out) {   // dir −1: угол убывает (через восток), +1: растёт (через запад)
+  const A = polar(pa), B = polar(pb); let d = B.a - A.a;
+  if (dir < 0) { while (d > 0) d -= 2 * Math.PI; } else { while (d < 0) d += 2 * Math.PI; }
+  const a = A.a + d * u, r = lerp(A.r, B.r, u);
+  return out.set(ORB_C.x + r * Math.cos(a), lerp(A.y, B.y, u), ORB_C.z + r * Math.sin(a));
+}
+const cam = { pos: V3(0, 0, 0), look: V3(0, 0, 0), up: V3(0, 1, 0), fov: 40, sx: 0.5, sy: 0.5 };
+function setFrom(s) { cam.pos.copy(s.pos); cam.look.copy(s.look); cam.up.copy(s.up); cam.fov = s.fov; cam.sx = s.sx; cam.sy = s.sy; }
+function mix2(a, b, u) { cam.pos.lerpVectors(a.pos, b.pos, u); cam.look.lerpVectors(a.look, b.look, u); cam.up.lerpVectors(a.up, b.up, u).normalize(); cam.fov = lerp(a.fov, b.fov, u); cam.sx = lerp(a.sx, b.sx, u); cam.sy = lerp(a.sy, b.sy, u); }
+function poseAt(p) {
+  if (p <= SA.tr1a) setFrom(S.a1);
+  else if (p < SA.tr1b) {
+    const u = ez(seg(p, SA.tr1a, SA.tr1b));
+    if (!HAS_FA) mix2(S.a1, S.a2, u);
+    else {   // дом чертежом облетает камера на другую сторону, взгляд всё время на доме
+      mix2(S.a1, S.a2, u); orbit(S.a1.pos, S.a2.pos, FCD.dir, u, cam.pos);
+    }
+  }
+  else if (p <= SA.tr2a) setFrom(S.a2);
+  else if (p < SA.tr2b) {
+    const u = HAS_FA ? ez(seg(p, SA.tr2a, SA.tr2b)) : easeInOut(seg(p, SA.tr2a, SA.tr2b));
+    if (HAS_FA) windowPose(u);   // с фасада облёт и влёт в угловое окно
+    else {
+      cam.pos.copy(path2.getPointAt(u)); cam.look.copy(look2.getPointAt(u)); cam.up.set(0, 1, 0);
+      const s = sstep(u); cam.fov = lerp(S.a2.fov, S.a3.fov, s); cam.sx = lerp(S.a2.sx, S.a3.sx, s); cam.sy = lerp(S.a2.sy, S.a3.sy, s);
+    }
+  }
+  else if (p <= SA.tr3a) setFrom(S.a3);
+  else if (p < SA.tr3b) {
+    // подъём строго вверх: сначала наклон вниз сквозь кровлю, потом высота растёт, а угол сужается так,
+    // чтобы видимая полоса земли росла плавно и дом на экране только уменьшался, без рывков
+    const u = HAS_FA ? ez(seg(p, SA.tr3a, SA.tr3b)) : seg(p, SA.tr3a, SA.tr3b), s = sstep(u);
+    const P0 = S.a3.pos, L0 = S.a3.look;
+    const h = lerp(P0.y, D_TOP, Math.pow(u, 2.4));
+    cam.pos.set(lerp(P0.x, S.a4.pos.x, s), h, lerp(P0.z, S.a4.pos.z, s));
+    cam.look.lerpVectors(L0, S.a4.look, sstep(seg(u, 0, 0.55)));
+    cam.up.set(0, 1, 0).lerp(S.a4.up, sstep(seg(u, 0.05, 0.45))).normalize();
+    const visTop = 2 * D_TOP * Math.tan(rad(S.a4.fov) / 2);
+    const vis = lerp(20, visTop, sstep(seg(u, 0.25, 1)));
+    const fovH = Math.min(60, deg(2 * Math.atan(vis / (2 * h))));
+    cam.fov = u < 0.25 ? lerp(S.a3.fov, 60, sstep(u / 0.25)) : fovH;
+    cam.sx = lerp(S.a3.sx, S.a4.sx, s); cam.sy = lerp(S.a3.sy, S.a4.sy, s);
+  }
+  else setFrom(S.a4);
+  return cam;
+}
+
+// ------------------------------------------------------------------
+// Проявление кадра по глубине (из теста, шейдер тот же): порядок точек кадра снимается с камеры остановки
+// один раз в текстуру, шум кадра один раз; край как у акварели
+// ------------------------------------------------------------------
+const PH_F0 = -0.38, PH_F1 = 1.3;
+// кадр A1: фон уходит от дома к краям экрана (Максим 27.10). Фронт идёт по карте a2d: доля площади кадра ближе к дому,
+// поэтому убранная площадь растёт ровно по изингу. w — ширина полосы, где идёт превращение. Варианты ?v=1 … 3:
+// 1 фокус уходит: фон расплывается и светлеет в бумагу; 2 полутон: фон рассыпается в точки, точки тают;
+// 3 карандаш: фон становится наброском и стирается (потом и дом уходит в линии);
+// 4 как в исходном аниматике (reveal: акварельные пятна, зерно, вуаль), только порядок не по глубине, а от дома к краям
+const EFX = {
+  1: { name: 'фокус', amp: 0.05, w: 0.26 },
+  2: { name: 'полутон', amp: 0.04, w: 0.22 },
+  3: { name: 'карандаш', amp: 0.05, w: 0.32 },
+  // 4: порядок reveal() = 1 − w·(доля площади от дома); w < 1, чтобы пятна (±0.17), как в оригинале, раскрывались островами впереди фронта.
+  // Всё видно при 1.22 (пятно до +0.17 и полоса крапинок 0.05; при 1.12 у ствола в покое уже была дыра), всё ушло около 1 − w − 0.2
+  4: { name: 'как в оригинале', amp: 0, w: 0.25, from: 1.22, to: 0.55 },
+};
+const EV = EFX[qs.get('v')] ? qs.get('v') : '4', EF = EFX[EV];
+if (EF.from === undefined) { EF.from = -EF.amp; EF.to = 1 + EF.w + EF.amp; }
+if (qs.has('v')) document.title = EV + ' · ' + EF.name + ' · ' + document.title;
+const RTW = MOB ? 640 : 1024;
+const orderMat = new THREE.ShaderMaterial({
+  uniforms: { uO: { value: V3(0, 0, 0) }, uNear: { value: 1 }, uWall: { value: 2 } },
+  vertexShader: 'varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
+  fragmentShader: `uniform vec3 uO; uniform float uNear; uniform float uWall; varying vec3 vW;
+    void main(){
+      float d = length(vW - uO);
+      float t = d < uWall ? (d - uNear) / (uWall - uNear) * 0.86 : 0.86 + 0.14 * clamp((d - uWall) / 22.0, 0.0, 1.0);
+      t = clamp(t, 0.0, 0.9999);
+      gl_FragColor = vec4(floor(t * 255.0) / 255.0, fract(t * 255.0), 0.0, 1.0);
+    }`,
+  side: THREE.DoubleSide,
+});
+const FS_VERT = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
+const NOISE2 = `
+    float h2(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+    float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+      return mix(mix(h2(i), h2(i + vec2(1.0, 0.0)), f.x), mix(h2(i + vec2(0.0, 1.0)), h2(i + vec2(1.0, 1.0)), f.x), f.y); }
+    float fbm(vec2 p){ float v = 0.0, a = 0.5; for (int i = 0; i < 6; i++) { v += a * vn(p); p = p * 2.03 + vec2(17.1, 9.2); a *= 0.5; } return v; }`;
+const noiseMat = new THREE.ShaderMaterial({
+  vertexShader: FS_VERT, depthTest: false, depthWrite: false,
+  fragmentShader: `varying vec2 vUv; ${NOISE2}
+    void main(){
+      vec2 p = vUv * vec2(1.7778, 1.0);
+      vec2 q = vec2(fbm(p * 2.2 + 3.1), fbm(p * 2.2 + 8.7));
+      float b1 = clamp((fbm(p * 3.4 + q * 1.7) - 0.5) * 2.3 + 0.5, 0.0, 1.0);
+      float b2 = clamp((fbm(p * 3.1 + q * 1.5 + 21.7) - 0.5) * 2.3 + 0.5, 0.0, 1.0);
+      float amp = smoothstep(0.38, 0.66, fbm(p * 1.25 + 40.0));
+      float gr = vn(vUv * vec2(380.0, 214.0)) * 0.6 + vn(vUv * vec2(150.0, 84.0) + 7.0) * 0.4;
+      gl_FragColor = vec4(b1, b2, amp, gr);
+    }`,
+});
+const noiseRT = new THREE.WebGLRenderTarget(RTW, Math.round(RTW * 9 / 16), { depthBuffer: false });
+const photoU = {
+  uA: { value: null }, uB: { value: null }, uOrd: { value: null }, uNoi: { value: noiseRT.texture },
+  uP1: { value: -9 }, uP2: { value: -9 }, uK: { value: new THREE.Vector2(1, 1) }, uC: { value: new THREE.Vector2(0.5, 0.5) }, uPaper: { value: sv(COL.paper) },
+  uZ: { value: 1 }, uZC: { value: new THREE.Vector2(0.5, 0.5) },   // наезд: кадр берётся из вырезки исходного файла
+  uMode: { value: 0 }, uFade: { value: 1 }, uThr: { value: 0.88 },
+  uEff: { value: +EV }, uAmp: { value: EF.amp }, uW: { value: EF.w }, uD: { value: null },   // A1: эффект ухода фона и карта фронта от дома
+  uPx: { value: new THREE.Vector2(1 / 1920, 1 / 1080) }, uCell: { value: 9 }, uTx: { value: new THREE.Vector2(1.5 / 1920, 1.5 / 1280) },   // шаг пикселя экрана в кадре, ячейка полутона, шаг наброска
+  uFix: { value: new THREE.Vector4(145 / 1920, 1 - 652 / 1280, 275 / 1920, 1 - 552 / 1280) }, uFixE: { value: new THREE.Vector2(15 / 1920, 15 / 1280) },   // A1: левый конец низкого карниза чистый с самого начала (на фото там ветка от левого дерева)
+  uM: { value: null }, uHasM: { value: 0 }, uTF: { value: 0.37 },   // A1: маска дома по фото; глубина окна в карте модели около 0.37
+};
+const photoMat = new THREE.ShaderMaterial({
+  uniforms: photoU, transparent: true, depthTest: false, depthWrite: false, vertexShader: FS_VERT,
+  fragmentShader: `
+    uniform sampler2D uA; uniform sampler2D uB; uniform sampler2D uOrd; uniform sampler2D uNoi;
+    uniform float uP1; uniform float uP2; uniform vec2 uK; uniform vec2 uC; uniform vec3 uPaper; uniform float uZ; uniform vec2 uZC;
+    uniform float uMode; uniform float uFade; uniform float uThr; uniform vec4 uFix; uniform vec2 uFixE;
+    uniform sampler2D uM; uniform float uHasM; uniform float uTF;
+    uniform float uEff; uniform float uAmp; uniform float uW; uniform sampler2D uD; uniform vec2 uPx; uniform float uCell; uniform vec2 uTx;
+    varying vec2 vUv;
+    float lum(vec2 p){ return dot(texture2D(uA, p, 1.5).rgb, vec3(0.299, 0.587, 0.114)); }
+    // A1: насколько фронт от дома прошёл точку кадра p: 0 ещё не дошёл, 1 полоса превращения позади
+    float pass(vec2 p, float n){ vec4 d = texture2D(uD, p); return clamp((uP1 - d.r - d.g / 255.0 + (n - 0.5) * uAmp) / uW, 0.0, 1.0); }
+    float reveal(float t, float blot, float amp, float gr, float P, out float veil, out float wash){
+      float e = t + (blot - 0.5) * mix(0.05, 0.34, amp);
+      float d = P - e;
+      float core = smoothstep(-0.004, 0.004, d);
+      float ahead = clamp(1.0 + d / 0.05, 0.0, 1.0) * step(d, 0.0);
+      float dots = smoothstep(1.0 - ahead * 0.45, 1.04 - ahead * 0.45, gr);
+      float behind = clamp(1.0 - d / 0.03, 0.0, 1.0) * step(0.0, d);
+      float holes = 1.0 - smoothstep(behind * 0.3 - 0.03, behind * 0.3, gr);
+      veil = smoothstep(-0.07, -0.008, d);
+      wash = smoothstep(-0.035, 0.0, d) * (0.25 + 0.25 * gr);
+      return clamp(max(core - holes, dots), 0.0, 1.0);
+    }
+    void main(){
+      vec2 uv = (vUv - uC) * uK + 0.5;
+      if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) discard;
+      vec4 o = texture2D(uOrd, uv); float t = o.r + o.g / 255.0;
+      vec4 nz = texture2D(uNoi, uv);
+      if (uMode > 0.5) {   // A1: фон уходит от дома к краям экрана, дом остаётся цветным; потом дом уходит, как в оригинале
+        vec2 tc = uZC + (uv - 0.5) * uZ;
+        vec3 c = texture2D(uA, tc).rgb;
+        float s = pass(tc, nz.r), sh = s, aBg; vec3 cb;
+        if (uEff < 1.5) {          // 1 фокус: фон расплывается, светлеет и уходит в бумагу
+          cb = mix(texture2D(uA, tc, smoothstep(0.0, 0.7, s) * 6.0).rgb, uPaper, smoothstep(0.3, 1.0, s) * 0.6);
+          aBg = 1.0 - smoothstep(0.55, 1.0, s);
+        } else if (uEff < 2.5) {   // 2 полутон: растр по сетке экрана, тёмное — крупная точка, светлое — мелкая; фронт и тон в центре точки, цвет свой (без мозаики)
+          vec2 cc = (floor(gl_FragCoord.xy / uCell) + 0.5) * uCell, off = (cc - gl_FragCoord.xy) * uPx;
+          float sc = pass(tc + off, texture2D(uNoi, uv + off).r), into = smoothstep(0.0, 0.2, sc);
+          float rad = mix(uCell * 0.72 * (0.3 + 0.75 * (1.0 - lum(tc + off))), -1.0, smoothstep(0.2, 1.0, sc));
+          cb = c;
+          aBg = mix(1.0, 1.0 - smoothstep(rad - 0.8, rad + 0.8, length(gl_FragCoord.xy - cc)), into);
+        } else if (uEff > 3.5) {   // 4 как в оригинале: то же растворение reveal(), порядок — от дома к краям (у дома 1, у краёв 1 − uW)
+          vec4 dq = texture2D(uD, tc); float vb, wb;
+          float mb = reveal(1.0 - uW * (dq.r + dq.g / 255.0), nz.r, nz.b, nz.a, uP1, vb, wb);
+          float ab = max(mb, wb), va = vb * 0.55;
+          aBg = va + ab - va * ab;
+          cb = (uPaper * va * (1.0 - ab) + c * ab) / max(aBg, 1e-4);
+          float vh2, wh2; float mh2 = reveal(1.02, nz.r, 0.0, nz.a, uP1, vh2, wh2);
+          sh = 1.0 - max(mh2, wh2);   // дом переходит на чистый кадр разом, пока уходит ближний к нему фон (пятна мелкие, ветки на кровле не висят)
+        } else {                   // 3 карандаш: контуры фото графитом на бумаге, набросок держится и стирается
+          vec2 e = uTx;
+          float gx = lum(tc + vec2(e.x, -e.y)) + 2.0 * lum(tc + vec2(e.x, 0.0)) + lum(tc + e) - lum(tc - e) - 2.0 * lum(tc - vec2(e.x, 0.0)) - lum(tc + vec2(-e.x, e.y));
+          float gy = lum(tc + vec2(-e.x, e.y)) + 2.0 * lum(tc + vec2(0.0, e.y)) + lum(tc + e) - lum(tc - e) - 2.0 * lum(tc - vec2(0.0, e.y)) - lum(tc + vec2(e.x, -e.y));
+          float ink = clamp(length(vec2(gx, gy)) * 2.0 - 0.16, 0.0, 1.0) * (0.7 + 0.3 * nz.a);
+          cb = mix(c, mix(uPaper, vec3(0.32, 0.32, 0.33), ink), smoothstep(0.0, 0.35, s));
+          aBg = 1.0 - smoothstep(0.65, 1.0, s);
+        }
+        aBg *= uFade;
+        // дом по маске фото (a2m: прямые сглаженные края, окно закрыто); без неё по глубине модели
+        float hm = uHasM > 0.5 ? texture2D(uM, tc).r : 1.0 - smoothstep(uThr - 0.02, uThr + 0.02, t);
+        float tH = t < uThr ? t : uTF;   // окно и щели, сквозные у модели: глубина как у окна
+        float veilH, washH;
+        float mH = reveal(tH, nz.r, nz.b, nz.a, uP2, veilH, washH);   // дом: прежнее растворение по глубине
+        float aH = max(mH, washH), vH = veilH * 0.55, AH = vH + aH - vH * aH;
+        vec2 fl = smoothstep(uFix.xy, uFix.xy + uFixE, tc) * (1.0 - smoothstep(uFix.zw - uFixE, uFix.zw, tc));
+        vec3 ch = mix(texture2D(uB, tc).rgb, c, (1.0 - smoothstep(0.0, 0.6, sh)) * uFade * (1.0 - fl.x * fl.y));   // дом: фронт выходит от дома, ствол и кусты на нём сразу сменяются чистым кадром
+        float bg = 1.0 - hm;   // 0 дом, 1 фон
+        float wH = hm * AH, wB = bg * aBg, A = wH + wB;   // на сглаженном краю дом и фон складываются по своим долям, без каймы листвы
+        if (A < 0.002) discard;
+        gl_FragColor = vec4(((uPaper * vH * (1.0 - aH) + ch * aH) / max(AH, 1e-4) * wH + cb * wB) / A, A);
+        return;
+      }
+      float veil1, wash1, veil2, wash2;
+      float m1 = reveal(t, nz.r, nz.b, nz.a, uP1, veil1, wash1);
+      if (m1 < 0.002 && veil1 < 0.002) discard;
+      vec2 uvT = uZC + (uv - 0.5) * uZ;
+      vec3 c = texture2D(uA, uvT).rgb;
+      float m2 = reveal(t, nz.g, nz.b, fract(nz.a * 7.31), uP2, veil2, wash2);
+      if (m2 > 0.002 || wash2 > 0.002) c = mix(c, texture2D(uB, uvT).rgb, max(m2, wash2));
+      float a1 = max(m1, wash1), v = veil1 * 0.55, Aa = v + a1 - v * a1;
+      gl_FragColor = vec4((uPaper * v * (1.0 - a1) + c * a1) / max(Aa, 1e-4), Aa);
+    }`,
+});
+const photoQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), photoMat); photoQuad.frustumCulled = false;
+const photoScene = new THREE.Scene(); photoScene.add(photoQuad);
+const photoCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+// кадры лежат data-URI в img/frames-data.js: при открытии с диска обычные картинки в WebGL-текстуры браузер не пускает
+const TEX = window.FRAMES || {};
+const tex = {}, ready = {};
+const state = { p: 0, dirty: true, lastP: -1 };
+{
+  const loader = new THREE.TextureLoader();
+  for (const k of Object.keys(TEX)) loader.load(TEX[k], (tx) => {
+    tx.colorSpace = THREE.NoColorSpace; tx.anisotropy = 4; tx.generateMipmaps = true; tx.minFilter = THREE.LinearMipmapLinearFilter;
+    tex[k] = tx;
+    const up = () => { renderer.initTexture(tx); ready[k] = true; state.dirty = true; };   // в видеокарту в простое, чтобы не было длинного кадра
+    if (window.requestIdleCallback) requestIdleCallback(up, { timeout: 1500 }); else setTimeout(up, 60);
+  }, undefined, () => console.warn('Сцена A: нет кадра', k));
+}
+function bakeOrder(s) {
+  const rt = new THREE.WebGLRenderTarget(RTW, Math.round(RTW / s.FA), { depthBuffer: true });
+  const c = new THREE.PerspectiveCamera(deg(s.fv), s.FA, Math.max(0.05, s.near * 0.02), 3000);
+  c.position.copy(s.pos); c.up.copy(s.up); c.lookAt(s.look);
+  const fw = 1000, fh = 1000 / s.FA; c.setViewOffset(fw, fh, (0.5 - s.pp[0]) * fw, (0.5 - s.pp[1]) * fh, fw, fh);
+  c.updateMatrixWorld(); c.updateProjectionMatrix();
+  const dir = s.look.clone().sub(s.pos).normalize();
+  orderMat.uniforms.uO.value.copy(s.pos).addScaledVector(dir, s.fit === 'rect' ? 0 : -(s === S.a3 ? 2.2 : 3));
+  if (s === S.a3) orderMat.uniforms.uO.value.y += 0.25;
+  orderMat.uniforms.uNear.value = s.near; orderMat.uniforms.uWall.value = s.wall;
+  const hidden = [];
+  scene.traverse((o) => { if (o.isMesh && o.visible && o.material.isShaderMaterial) { hidden.push(o); o.visible = false; } });
+  const rv = groups.roof.grp.visible; if (s === S.a4) groups.roof.grp.visible = false;
+  const shell = s === S.a3 && HAS_FA; if (shell) { groups.parts.grp.visible = false; groups.furn.grp.visible = false; }   // тёплый контур: без перегородок и мебели
+  bakeGround.visible = s !== S.a3 && s !== S.a1;   // A1: земля уходит вместе с фоном, остаётся только дом
+  scene.overrideMaterial = orderMat;
+  renderer.setRenderTarget(rt); renderer.setClearColor(0xffffff, 1); renderer.clear(); renderer.render(scene, c);
+  renderer.setRenderTarget(null); renderer.setClearColor(COL.paper, 1);
+  scene.overrideMaterial = null; bakeGround.visible = false; groups.roof.grp.visible = rv;
+  if (shell) { groups.parts.grp.visible = true; groups.furn.grp.visible = true; }
+  hidden.forEach((o) => { o.visible = true; });
+  s.ord = rt.texture;
+}
+{
+  const q = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), noiseMat); q.frustumCulled = false;
+  const qs = new THREE.Scene(); qs.add(q);
+  renderer.setRenderTarget(noiseRT); renderer.render(qs, photoCam); renderer.setRenderTarget(null);
+}
+
+// ------------------------------------------------------------------
+// Кадр: камера по прогрессу, группы линий, фото
+// ------------------------------------------------------------------
+const photo = { on: false, cover: false };
+function update(p) {
+  const c = poseAt(p);
+  camera.position.copy(c.pos); camera.up.copy(c.up); camera.lookAt(c.look); camera.updateMatrixWorld();
+  camera.fov = c.fov; camera.aspect = W / H;
+  const dist = c.pos.distanceTo(c.look);
+  camera.near = THREE.MathUtils.clamp(dist * 0.012, 0.05, 2.5); camera.far = 2000;
+  camera.setViewOffset(W, H, (0.5 - c.sx) * W, (0.5 - c.sy) * H, W, H);
+  camera.updateProjectionMatrix();
+  // кровля и фундамент уходят в начале подъёма, камера проходит сквозь плиту
+  const rise = seg(p, SA.tr3a, SA.tr3b);
+  const roofA = 1 - sstep(seg(rise, 0, 0.09));
+  // тёплый контур (с фасада внутрь): перегородки и мебель уходят в начале облёта к окну и возвращаются на подъёме к плану
+  const shellA = HAS_FA ? Math.max(1 - sstep(seg(p, SA.tr2a, SA.tr2a + SA.T(0.45))), sstep(seg(rise, 0.15, 0.4))) : 1;
+  for (const [k, a] of [['roof', roofA], ['house', 1], ['furn', shellA], ['parts', shellA]]) {
+    const g = groups[k]; g.lines.material.uniforms.uAlpha.value = a; g.grp.visible = a > 0.002;
+    if (k === 'furn' || k === 'parts') g.solid.visible = a > 0.5;   // бумажные грани не гасятся по прозрачности: убираются на середине
+  }
+  // один оливковый элемент за раз: плита навеса на пути к фасаду, угловое окно перед влётом, пол гостиной на подъёме
+  const Ts = SA.T;
+  const aRoof = sstep(seg(p, SA.tr1a + Ts(0.1), SA.tr1a + Ts(0.45))) * (1 - sstep(seg(p, SA.tr1b - Ts(0.45), SA.tr1b - Ts(0.1))));
+  // угловое окно А подсвечено, пока камера разворачивается к нему, и гаснет до влёта
+  const aWin = HAS_FA ? sstep(seg(p, SA.tr2a + Ts(1.17), SA.tr2a + Ts(1.56))) * (1 - sstep(seg(p, SA.tr2a + Ts(2.11), SA.tr2a + Ts(2.38))))
+    : sstep(seg(p, SA.tr2a + 0.01, SA.tr2a + 0.035)) * (1 - sstep(seg(p, SA.tr2a + 0.075, SA.tr2a + 0.095)));
+  const aFloor = sstep(seg(rise, 0.25, 0.4)) * (1 - sstep(seg(p, SA.a4rev0, SA.a4rev0 + 0.015)));
+  for (const [k, a] of [['roof', aRoof], ['win', aWin], ['floor', aFloor]]) { const m = accents[k]; m.material.uniforms.uAlpha.value = a; m.visible = a > 0.002; }
+  // фото: какая остановка и где фронт проявления (от камеры вглубь кадра)
+  let s = null, P1 = -9, P2 = -9;
+  let fade = 1;
+  if (p < SA.tr1b) {   // фон: фронт от дома к краям, убранная площадь по изингу, остаток в конце гаснет целиком; дом: как в оригинале
+    s = S.a1; const kb = seg(p, SA.a1dis0, SA.a1bg1), kh = seg(p, SA.a1h0, SA.a1dis1);
+    P1 = p < SA.a1dis0 ? EF.from : p < SA.a1dis1 ? lerp(EF.from, EF.to, ez(kb)) : -9;
+    P2 = kh <= 0 ? PH_F1 : lerp(0.95, PH_F0, ez(kh));
+    fade = 1 - sstep(seg(kb, 0.8, 1));
+  }
+  else if (p <= SA.tr2a) { s = S.a2; P1 = p < SA.a2dis0 ? lerp(PH_F0, PH_F1, ez(seg(p, SA.a2rev0, SA.a2rev1))) : p < SA.a2dis1 ? lerp(PH_F1, PH_F0, ez(seg(p, SA.a2dis0, SA.a2dis1))) : -9; }
+  else if (p <= SA.tr3a) {
+    s = S.a3;
+    // тёплый контур; ступень отделки (a3f) пока не показывается: её кадр снят со старой камеры
+    const cc = seg(p, SA.a3c0, SA.a3c1), dd = seg(p, SA.a3dis0, SA.a3dis1);
+    P1 = cc <= 0 ? -9 : lerp(PH_F0, PH_F1, ez(cc)); P2 = -9;
+    if (dd > 0) P1 = dd >= 1 ? -9 : lerp(PH_F1, PH_F0, ez(dd));
+  }
+  else { s = S.a4; const r = seg(p, SA.a4rev0, SA.a4rev1); P1 = r <= 0 ? -9 : lerp(PH_F0, PH_F1, ez(r)); }
+  const ok = s && !LINES_ONLY && s.tex.every((k) => ready[k]) && P1 > -9;
+  // A1: пока дом цветной, линии модели под ним не рисуются — маска дома идёт по краю фото, модель местами на пару пикселей шире
+  photo.on = ok; photo.cover = ok && (P1 >= PH_F1 || (s === S.a1 && p < SA.a1h0)) && s.fit === 'cover';
+  if (ok) {
+    photoU.uA.value = tex[s.tex[0]]; photoU.uB.value = tex[s.tex[1] || s.tex[0]]; photoU.uOrd.value = s.ord;
+    photoU.uM.value = s.tex[2] ? tex[s.tex[2]] : null; photoU.uHasM.value = s.tex[2] ? 1 : 0;
+    photoU.uP1.value = P1; photoU.uP2.value = P2; photoU.uK.value.set(s.kx, s.ky); photoU.uC.value.set(s.cx, 1 - s.cy);
+    photoU.uMode.value = s === S.a1 && s.tex[3] ? 1 : 0; photoU.uFade.value = s === S.a1 ? fade : 1;
+    if (s.tex[3]) {   // A1: карта фронта, шаг пикселя экрана в кадре (для полутона), ячейка полутона в пикселях экрана
+      const cv = renderer.domElement;
+      photoU.uD.value = tex[s.tex[3]]; photoU.uPx.value.set(s.kx / cv.width, s.ky / cv.height); photoU.uCell.value = Math.round(11 * renderer.getPixelRatio());
+    }
+    photoU.uZ.value = s.zoom ? 1 / s.zoom : 1; if (s.zoom) photoU.uZC.value.set(s.zc[0], 1 - s.zc[1]); else photoU.uZC.value.set(0.5, 0.5);
+  }
+}
+function frame() {
+  update(state.p);
+  if (!photo.cover) renderer.render(scene, camera);
+  if (photo.on) { renderer.autoClear = photo.cover; renderer.render(photoScene, photoCam); renderer.autoClear = true; }
+}
+function resize() {
+  W = window.innerWidth; H = window.innerHeight;
+  renderer.setSize(W, H, false);
+  renderer.getDrawingBufferSize(U.uRes.value);
+  for (const k of Object.keys(S)) fitStop(S[k]);
+  state.dirty = true;
+}
+window.addEventListener('resize', resize);
+resize();
+for (const k of Object.keys(S)) bakeOrder(S[k]);
+// шейдеры собираются до показа, чтобы при прокрутке не было рывка
+{
+  const hidden = [];
+  scene.traverse((o) => { if (!o.visible) { hidden.push(o); o.visible = true; } });
+  renderer.compile(scene, camera); renderer.compile(photoScene, photoCam);
+  hidden.forEach((o) => { o.visible = false; });
+}
+function setDPR(d) {
+  DPR = d; renderer.setPixelRatio(d);
+  for (const m of lineMats) { m.uniforms.uWInk.value = m.userData.w[0] * d; m.uniforms.uWDim.value = m.userData.w[1] * d; m.uniforms.uWAcc.value = m.userData.w[2] * d; }
+  resize();
+}
+if (FORCE_P != null) {
+  // служебный режим: один кадр по прогрессу, тексты по тому же времени
+  A.scrollTrigger && A.scrollTrigger.disable(false);
+  A.progress(FORCE_P); state.p = FORCE_P; frame();
+  window.__sceneA = { frame, update, S, cam, camera, renderer, groups, accents, ACC, state, scene, orderMat, bakeGround, THREE };   // служебно: съёмка ракурсов
+  window.__ready = true;
+  return;
+}
+// рендер только когда прогресс сцены изменился; медленно идёт — опускаем плотность пикселей
+const perf = { last: 0, ema: 16.7, slowMs: 0, prev: false };
+gsap.ticker.add(() => {
+  const p = A.progress();
+  if (p !== state.lastP || state.dirty) {
+    state.lastP = p; state.p = p; state.dirty = false;
+    const now = performance.now();
+    if (perf.prev) {
+      const dt = now - perf.last; perf.ema = perf.ema * 0.85 + dt * 0.15;
+      if (perf.ema > 26 && DPR > 1) { perf.slowMs += dt; if (perf.slowMs > 900) { setDPR(Math.max(1, DPR - 0.5)); perf.slowMs = 0; perf.ema = 16.7; } } else perf.slowMs = 0;
+    }
+    perf.last = now; perf.prev = true;
+    frame();
+  } else perf.prev = false;
+});
+window.__sceneA = { frame, update, S, cam, camera, renderer, groups, state };
+window.__ready = true;
+})();
+</script>
+
+</html>
